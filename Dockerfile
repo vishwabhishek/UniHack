@@ -1,13 +1,13 @@
 # ==============================================================================
 # Multi-Stage Enterprise Dockerfile for UniHack PIM Intelligence
-# Stage 1: Build React/TypeScript Frontend
+# Stage 1: Build React/TypeScript Frontend (Node 24)
 # Stage 2: Python 3.12 Runtime & FastAPI Server
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
 # Stage 1: Frontend Build
 # ------------------------------------------------------------------------------
-FROM node:20-slim AS frontend-builder
+FROM node:24-slim AS frontend-builder
 WORKDIR /app/frontend
 
 COPY src/frontend/package*.json ./
@@ -34,12 +34,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for ultra-fast deterministic dependency management
-RUN pip install --no-cache-dir uv
-
 # Copy dependency files and install Python packages
-COPY pyproject.toml .
-RUN uv pip install --system --no-cache -e .
+COPY requirements.txt pyproject.toml ./
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application source and data
 COPY src/ ./src/
