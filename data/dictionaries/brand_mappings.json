@@ -1,0 +1,816 @@
+{
+  "supplier_to_entity": {
+    "Phillips Lighting (5831)": {
+      "mfr": "Signify North America Corporation",
+      "brand": "Philips\u00ae",
+      "trade": "Philips Lighting",
+      "url": "https://www.lighting.philips.com"
+    },
+    "Milwaukee Accessory (4031)": {
+      "mfr": "Milwaukee Electric Tool Corp.",
+      "brand": "Milwaukee\u00ae",
+      "trade": "Milwaukee",
+      "url": "https://www.milwaukeetool.com"
+    },
+    "Boise Cascade Building Materials (BOICA)": {
+      "mfr": "Trex Company, Inc.",
+      "brand": "Trex\u00ae",
+      "trade": "Trex",
+      "url": "https://www.trex.com"
+    },
+    "Appliance Dealers Cooperative (APPDE)": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "Whirlpool\u00ae",
+      "trade": "Whirlpool",
+      "url": "https://www.whirlpool.com"
+    },
+    "Kichler Lighting (KICLI)": {
+      "mfr": "Kichler Lighting LLC",
+      "brand": "Kichler\u00ae",
+      "trade": "Kichler",
+      "url": "https://www.kichler.com"
+    },
+    "Parksite (6151)": {
+      "mfr": "The AZEK Company",
+      "brand": "TimberTech\u00ae",
+      "trade": "AZEK\u00ae",
+      "url": "https://www.timbertech.com"
+    },
+    "Black & Decker/dewlt (2585)": {
+      "mfr": "Stanley Black & Decker",
+      "brand": "DEWALT\u00ae",
+      "trade": "DEWALT",
+      "url": "https://www.dewalt.com"
+    },
+    "Freud Inc (2435)": {
+      "mfr": "Freud America, Inc.",
+      "brand": "Diablo\u00ae",
+      "trade": "Freud",
+      "url": "https://www.diablotools.com"
+    },
+    "U S Lumber (3073)": {
+      "mfr": "Trex Company, Inc.",
+      "brand": "Trex\u00ae",
+      "trade": "Trex",
+      "url": "https://www.trex.com"
+    },
+    "Satco Prod Inc (5573)": {
+      "mfr": "Satco Products, Inc.",
+      "brand": "SATCO\u00ae",
+      "trade": "Nuvo\u00ae",
+      "url": "https://www.satco.com"
+    },
+    "Makita Usa Inc (5142)": {
+      "mfr": "Makita U.S.A., Inc.",
+      "brand": "Makita\u00ae",
+      "trade": "Makita",
+      "url": "https://www.makitatools.com"
+    },
+    "Southwire/g Turner (6603)": {
+      "mfr": "Southwire Company, LLC",
+      "brand": "Southwire\u00ae",
+      "trade": "Southwire",
+      "url": "https://www.southwire.com"
+    },
+    "Leviton Mfg Co (4927)": {
+      "mfr": "Leviton Manufacturing Co., Inc.",
+      "brand": "Leviton\u00ae",
+      "trade": "Leviton",
+      "url": "https://www.leviton.com"
+    },
+    "Festool USA (FESTO)": {
+      "mfr": "Festool USA",
+      "brand": "Festool\u00ae",
+      "trade": "Festool",
+      "url": "https://www.festoolusa.com"
+    },
+    "Tech Gear 5.7 Inc (TECGE)": {
+      "mfr": "Custom LeatherCraft",
+      "brand": "CLC\u00ae",
+      "trade": "Tech Gear 5.7",
+      "url": "https://www.goclc.com"
+    },
+    "Kreg Tool Company (KRETO)": {
+      "mfr": "Kreg Tool Company",
+      "brand": "Kreg\u00ae",
+      "trade": "Kreg",
+      "url": "https://www.kregtool.com"
+    },
+    "Edge Eyewear Inc (EDGSA)": {
+      "mfr": "Wolf Peak International, Inc.",
+      "brand": "Edge Eyewear\u00ae",
+      "trade": "Edge Eyewear",
+      "url": "https://www.edgeeyewear.com"
+    },
+    "U S Tape Company (6694)": {
+      "mfr": "U.S. Tape Company",
+      "brand": "US Tape\u00ae",
+      "trade": "DuraWheel",
+      "url": "https://www.ustape.com"
+    },
+    "Mirka Abrasives Inc (MIRUS)": {
+      "mfr": "Mirka USA Inc.",
+      "brand": "Mirka\u00ae",
+      "trade": "Abranet\u00ae",
+      "url": "https://www.mirka.com"
+    },
+    "Palmer Donavin Mfg Company (PALDO)": {
+      "mfr": "CertainTeed Corporation",
+      "brand": "CertainTeed\u00ae",
+      "trade": "CertainTeed",
+      "url": "https://www.certainteed.com"
+    },
+    "Hunter Fan Co (4381)": {
+      "mfr": "Hunter Fan Company",
+      "brand": "Hunter\u00ae",
+      "trade": "Hunter",
+      "url": "https://www.hunterfan.com"
+    },
+    "Premier Metals (PREME)": {
+      "mfr": "Premier Metals Inc.",
+      "brand": "Premier Metals\u00ae",
+      "trade": "Premier",
+      "url": "https://www.premiermetals.com"
+    },
+    "Jam Industrial Supply LLC (JAMIN)": {
+      "mfr": "3M Company",
+      "brand": "3M\u2122",
+      "trade": "Cubitron\u2122 II",
+      "url": "https://www.3m.com"
+    },
+    "Vessel Tools USA Inc (VESTO)": {
+      "mfr": "Vessel Tools USA Inc.",
+      "brand": "VESSEL\u00ae",
+      "trade": "Megadora",
+      "url": "https://www.vesseltools.com"
+    },
+    "Oliver Machinery Company (OLIMA)": {
+      "mfr": "Oliver Machinery Company",
+      "brand": "Oliver\u00ae",
+      "trade": "Oliver Machinery",
+      "url": "https://www.olivermachinery.net"
+    },
+    "Prime Wire & Cable (3562)": {
+      "mfr": "Prime Wire & Cable, Inc.",
+      "brand": "Prime\u00ae",
+      "trade": "Prime Cable",
+      "url": "https://www.primewirecable.com"
+    },
+    "Bow Products (BOWPR)": {
+      "mfr": "Bow Products LLC",
+      "brand": "Bow Products\u00ae",
+      "trade": "FeatherPRO",
+      "url": "https://www.bow-products.com"
+    },
+    "Saw Stop LLC (SAWST)": {
+      "mfr": "SawStop, LLC",
+      "brand": "SawStop\u00ae",
+      "trade": "SawStop",
+      "url": "https://www.sawstop.com"
+    },
+    "Rees Cast Stone Company (REECA)": {
+      "mfr": "Rees Cast Stone Company",
+      "brand": "Rees Cast Stone\u00ae",
+      "trade": "Rees",
+      "url": "https://www.reescaststone.com"
+    },
+    "United Window & Door Manufacturing (UNIWI)": {
+      "mfr": "United Window & Door Manufacturing",
+      "brand": "United Window & Door",
+      "trade": "4500 Series",
+      "url": "https://www.unitedwindowmfg.com"
+    },
+    "Westwood Lumber Sales (WESLU)": {
+      "mfr": "Westwood Lumber Sales Inc.",
+      "brand": "Westwood\u00ae",
+      "trade": "Westwood Lumber",
+      "url": "https://www.westwoodlumber.com"
+    },
+    "Woodpeckers Inc (WOODP)": {
+      "mfr": "Woodpeckers, LLC",
+      "brand": "Woodpeckers\u00ae",
+      "trade": "OneTIME Tool",
+      "url": "https://www.woodpeck.com"
+    },
+    "Robt Bosch Tool Corp (6564)": {
+      "mfr": "Robert Bosch Tool Corporation",
+      "brand": "Bosch\u00ae",
+      "trade": "Bosch",
+      "url": "https://www.boschtools.com"
+    },
+    "Velux America Inc (VELAM)": {
+      "mfr": "VELUX America LLC",
+      "brand": "VELUX\u00ae",
+      "trade": "VELUX",
+      "url": "https://www.veluxusa.com"
+    },
+    "Fenton Bros Electric Inc (FENBR)": {
+      "mfr": "Remke Industries, Inc.",
+      "brand": "Remke\u00ae",
+      "trade": "Tuff-Seal\u2122",
+      "url": "https://www.remke.com"
+    },
+    "Square D Con Prod Dv (6825)": {
+      "mfr": "Schneider Electric USA, Inc.",
+      "brand": "Square D\u2122",
+      "trade": "Square D",
+      "url": "https://www.se.com"
+    },
+    "Whiteside Machine & Repair Co (WHIMA)": {
+      "mfr": "Whiteside Machine Company",
+      "brand": "Whiteside\u00ae",
+      "trade": "Whiteside Router Bits",
+      "url": "https://www.whitesiderouterbits.com"
+    },
+    "CMT USA Inc (CMTUS)": {
+      "mfr": "CMT USA, Inc.",
+      "brand": "CMT Orange Tools\u00ae",
+      "trade": "CMT",
+      "url": "https://www.cmtorangetools.com"
+    },
+    "JPW Industries (JPWIN)": {
+      "mfr": "JPW Industries, Inc.",
+      "brand": "JET\u00ae",
+      "trade": "Powermatic",
+      "url": "https://www.jpwindustries.com"
+    },
+    "Wera Tools NA Inc (WERTO)": {
+      "mfr": "Wera Tools Inc.",
+      "brand": "Wera\u00ae",
+      "trade": "Kraftform",
+      "url": "https://www.weratools.com"
+    },
+    "ProVia (PRODO)": {
+      "mfr": "ProVia LLC",
+      "brand": "ProVia\u00ae",
+      "trade": "ProVia",
+      "url": "https://www.provia.com"
+    },
+    "Certainteed Gypsum (2765)": {
+      "mfr": "CertainTeed Corporation",
+      "brand": "CertainTeed\u00ae",
+      "trade": "CertainTeed",
+      "url": "https://www.certainteed.com"
+    },
+    "Hager Hinge Co (4189)": {
+      "mfr": "Hager Companies",
+      "brand": "Hager\u00ae",
+      "trade": "Hager",
+      "url": "https://www.hagerco.com"
+    },
+    "Cooper Lighting (7638)": {
+      "mfr": "Cooper Lighting Solutions",
+      "brand": "Halo\u00ae",
+      "trade": "Cooper Lighting",
+      "url": "https://www.cooperlighting.com"
+    },
+    "Feit Electric (3468)": {
+      "mfr": "Feit Electric Company, Inc.",
+      "brand": "Feit Electric\u00ae",
+      "trade": "Feit Electric",
+      "url": "https://www.feit.com"
+    },
+    "ACG Brands (1154)": {
+      "mfr": "Alliance Consumer Group",
+      "brand": "NEBO\u00ae",
+      "trade": "True Utility",
+      "url": "https://www.nebotools.com"
+    },
+    "Senco Products Inc (4650)": {
+      "mfr": "KYOCERA SENCO Industrial Tools, Inc.",
+      "brand": "SENCO\u00ae",
+      "trade": "SENCO",
+      "url": "https://www.senco.com"
+    },
+    "National Nail Corp (7439)": {
+      "mfr": "National Nail Corp.",
+      "brand": "CAMO\u00ae",
+      "trade": "Pro-Fit\u00ae",
+      "url": "https://www.nationalnail.com"
+    },
+    "Prebena (PREBE)": {
+      "mfr": "Prebena Fastening Systems LLC",
+      "brand": "PREBENA\u00ae",
+      "trade": "Prebena",
+      "url": "https://www.prebena-usa.com"
+    },
+    "Marshalltown Trowel (5155)": {
+      "mfr": "Marshalltown Company",
+      "brand": "MARSHALLTOWN\u00ae",
+      "trade": "Marshalltown",
+      "url": "https://www.marshalltown.com"
+    },
+    "Ohio Firewatch Protection Inc (HOLFS)": {
+      "mfr": "Ohio Firewatch Protection Inc.",
+      "brand": "Firewatch\u00ae",
+      "trade": "Firewatch",
+      "url": "https://www.ohiofirewatch.com"
+    },
+    "First Alert - B R K Brands (2754)": {
+      "mfr": "Resideo Technologies, Inc.",
+      "brand": "First Alert\u00ae",
+      "trade": "BRK Electronics",
+      "url": "https://www.firstalert.com"
+    },
+    "Malco Prod (2370)": {
+      "mfr": "Malco Products, SBC",
+      "brand": "Malco\u00ae",
+      "trade": "Malco Tools",
+      "url": "https://www.malcoproducts.com"
+    },
+    "King Canada Inc (KINCA)": {
+      "mfr": "King Canada Inc.",
+      "brand": "King Canada\u00ae",
+      "trade": "King Industrial",
+      "url": "https://www.kingcanada.com"
+    },
+    "Woodstock Intl (3658)": {
+      "mfr": "Woodstock International, Inc.",
+      "brand": "SHOP FOX\u00ae",
+      "trade": "Woodstock",
+      "url": "https://www.woodstockint.com"
+    },
+    "3 M Co (5293)": {
+      "mfr": "3M Company",
+      "brand": "3M\u2122",
+      "trade": "Scotch\u00ae",
+      "url": "https://www.3m.com"
+    },
+    "Emseal Joint Systems Ltd (EMSJO)": {
+      "mfr": "Emseal Joint Systems, Ltd.",
+      "brand": "EMSEAL\u00ae",
+      "trade": "Emseal",
+      "url": "https://www.emseal.com"
+    },
+    "V & V Appliance Parts Inc (VVAPP)": {
+      "mfr": "V&V Appliance Parts Inc.",
+      "brand": "V&V\u00ae",
+      "trade": "V&V Appliance",
+      "url": "https://www.vvappliance.com"
+    },
+    "A J Manufacturing Inc (AJMAN)": {
+      "mfr": "A.J. Manufacturing, Inc.",
+      "brand": "AJ Manufacturing\u00ae",
+      "trade": "AJ Doors",
+      "url": "https://www.ajdoor.com"
+    },
+    "Huber Eng Wood LLC (3158)": {
+      "mfr": "Huber Engineered Woods LLC",
+      "brand": "ZIP System\u00ae",
+      "trade": "AdvanTech\u00ae",
+      "url": "https://www.huberwood.com"
+    },
+    "MillerTech Energy Solutions (MILTE)": {
+      "mfr": "MillerTech Energy Solutions LLC",
+      "brand": "MillerTech\u00ae",
+      "trade": "MillerTech",
+      "url": "https://www.millertechstore.com"
+    },
+    "Metalmark Industrial Inc (METIN)": {
+      "mfr": "Metalmark Industrial Inc.",
+      "brand": "Metalmark\u00ae",
+      "trade": "Metalmark",
+      "url": "https://www.metalmark.com"
+    },
+    "Thomas & Betts (7405)": {
+      "mfr": "ABB Installation Products Inc.",
+      "brand": "Thomas & Betts\u00ae",
+      "trade": "Steel City\u00ae",
+      "url": "https://www.tnb.abb.com"
+    },
+    "Cooper Wiring Devices (3560)": {
+      "mfr": "Eaton Corporation",
+      "brand": "Arrow Hart\u00ae",
+      "trade": "Cooper Wiring",
+      "url": "https://www.eaton.com"
+    },
+    "Lithonia Lighting (2776)": {
+      "mfr": "Acuity Brands Lighting, Inc.",
+      "brand": "Lithonia Lighting\u00ae",
+      "trade": "Lithonia",
+      "url": "https://www.acuitybrands.com"
+    },
+    "Keystone (5702)": {
+      "mfr": "Keystone Technologies LLC",
+      "brand": "Keystone Technologies\u00ae",
+      "trade": "SmartDrive",
+      "url": "https://www.keystonetech.com"
+    },
+    "Maxsa Innovations (MAXIN)": {
+      "mfr": "MAXSA Innovations, LLC",
+      "brand": "MAXSA\u00ae",
+      "trade": "Park Right",
+      "url": "https://www.maxsainnovations.com"
+    },
+    "Streamlight (7277)": {
+      "mfr": "Streamlight, Inc.",
+      "brand": "Streamlight\u00ae",
+      "trade": "Survivor\u00ae",
+      "url": "https://www.streamlight.com"
+    },
+    "Police Security (9470)": {
+      "mfr": "Police Security Flashlights",
+      "brand": "Police Security\u00ae",
+      "trade": "Police Security",
+      "url": "https://www.policesecurity.com"
+    },
+    "Woods Wire Southwire (7579)": {
+      "mfr": "Southwire Company, LLC",
+      "brand": "Woods\u00ae",
+      "trade": "Woods Wire",
+      "url": "https://www.southwire.com"
+    },
+    "Sabre (9195)": {
+      "mfr": "Security Equipment Corporation",
+      "brand": "SABRE\u00ae",
+      "trade": "SABRE Red",
+      "url": "https://www.sabrered.com"
+    },
+    "Radians (7363)": {
+      "mfr": "Radians, Inc.",
+      "brand": "Radians\u00ae",
+      "trade": "DEWALT Safety",
+      "url": "https://www.radians.com"
+    },
+    "Amana Tool Corp (AMATO)": {
+      "mfr": "Amana Tool Corporation",
+      "brand": "Amana Tool\u00ae",
+      "trade": "Timberline",
+      "url": "https://www.amanatool.com"
+    },
+    "Irwin Industrial Tools (5863)": {
+      "mfr": "Stanley Black & Decker",
+      "brand": "IRWIN\u00ae",
+      "trade": "Marples\u00ae",
+      "url": "https://www.irwin.com"
+    },
+    "J&G Machinery (JGMAC)": {
+      "mfr": "J&G Machinery Inc.",
+      "brand": "J&G Machinery\u00ae",
+      "trade": "J&G",
+      "url": "https://www.jgmachinery.com"
+    }
+  },
+  "appliance_brand_patterns": {
+    "PDSH": {
+      "mfr": "Rheem Manufacturing",
+      "brand": "FRIGIDAIRE\u00ae",
+      "trade": "Electrolux Home Products",
+      "series": "Professional Series"
+    },
+    "WDTS": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "Whirlpool\u00ae",
+      "trade": "Whirlpool",
+      "series": "Eco Series"
+    },
+    "WSGS": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "Whirlpool\u00ae",
+      "trade": "Whirlpool",
+      "series": "Gas Series"
+    },
+    "WMMS": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "Whirlpool\u00ae",
+      "trade": "Whirlpool",
+      "series": "Over-The-Range"
+    },
+    "MVWP": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "Maytag\u00ae",
+      "trade": "Commercial Technology",
+      "series": "Commercial Series"
+    },
+    "KDFM": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "KitchenAid\u00ae",
+      "trade": "KitchenAid",
+      "series": "PrintShield\u2122 Series"
+    },
+    "KDTS": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "KitchenAid\u00ae",
+      "trade": "KitchenAid",
+      "series": "Custom Panel Series"
+    },
+    "KDPS": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "KitchenAid\u00ae",
+      "trade": "KitchenAid",
+      "series": "ProWash\u2122 Series"
+    },
+    "KSES": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "KitchenAid\u00ae",
+      "trade": "KitchenAid",
+      "series": "Even-Heat\u2122 Series"
+    },
+    "KMMF": {
+      "mfr": "Whirlpool Corporation",
+      "brand": "KitchenAid\u00ae",
+      "trade": "KitchenAid",
+      "series": "Microwave Hood Combination"
+    },
+    "PDT": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE Profile\u2122",
+      "trade": "GE Profile",
+      "series": "Profile Series"
+    },
+    "PDD": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE\u00ae",
+      "trade": "GE Appliances",
+      "series": "Built-In Series"
+    },
+    "PTD": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE Profile\u2122",
+      "trade": "GE Profile",
+      "series": "Smart Gas Dryer Series"
+    },
+    "PTW": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE Profile\u2122",
+      "trade": "GE Profile",
+      "series": "Smart Washer Series"
+    },
+    "PEP": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE Profile\u2122",
+      "trade": "GE Profile",
+      "series": "Electric Cooktop Series"
+    },
+    "PS96": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE Profile\u2122",
+      "trade": "GE Profile",
+      "series": "Slide-In Range Series"
+    },
+    "PB90": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE\u00ae",
+      "trade": "GE Appliances",
+      "series": "Free-Standing Range Series"
+    },
+    "GCST": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE\u00ae",
+      "trade": "GE Appliances",
+      "series": "Countertop Microwave Series"
+    },
+    "PCWK": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE Profile\u2122",
+      "trade": "GE Profile",
+      "series": "Countertop Microwave Series"
+    },
+    "GDE": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE\u00ae",
+      "trade": "GE Appliances",
+      "series": "Bottom-Freezer Refrigerator"
+    },
+    "FCM": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE\u00ae",
+      "trade": "GE Appliances",
+      "series": "Chest Freezer Series"
+    },
+    "GNE": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE\u00ae",
+      "trade": "GE Appliances",
+      "series": "French-Door Refrigerator Series"
+    },
+    "PAD": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE Profile\u2122",
+      "trade": "GE Profile",
+      "series": "Door-In-Door Refrigerator Series"
+    },
+    "PGE": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE Profile\u2122",
+      "trade": "GE Profile",
+      "series": "Quad-Door Refrigerator Series"
+    },
+    "JXGRILL": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "GE\u00ae",
+      "trade": "GE Appliances",
+      "series": "Accessory"
+    },
+    "LDPH": {
+      "mfr": "LG Electronics USA, Inc.",
+      "brand": "LG\u00ae",
+      "trade": "LG QuadWash\u2122",
+      "series": "QuadWash\u00ae Series"
+    },
+    "WKE": {
+      "mfr": "LG Electronics USA, Inc.",
+      "brand": "LG WashTower\u2122",
+      "trade": "LG Electronics",
+      "series": "WashTower Series"
+    },
+    "LSEL": {
+      "mfr": "LG Electronics USA, Inc.",
+      "brand": "LG\u00ae",
+      "trade": "LG ProBake Convection\u00ae",
+      "series": "Slide-In Electric Range"
+    },
+    "MSER": {
+      "mfr": "LG Electronics USA, Inc.",
+      "brand": "LG\u00ae",
+      "trade": "LG Electronics",
+      "series": "NeoChef\u2122 Series"
+    },
+    "LT18": {
+      "mfr": "LG Electronics USA, Inc.",
+      "brand": "LG\u00ae",
+      "trade": "LG Electronics",
+      "series": "Top-Freezer Refrigerator"
+    },
+    "PCFE": {
+      "mfr": "Rheem Manufacturing",
+      "brand": "FRIGIDAIRE GALLERY\u00ae",
+      "trade": "Electrolux Home Products",
+      "series": "Gallery Series"
+    },
+    "GCFG": {
+      "mfr": "Rheem Manufacturing",
+      "brand": "FRIGIDAIRE GALLERY\u00ae",
+      "trade": "Electrolux Home Products",
+      "series": "Gallery Series"
+    },
+    "PMOS": {
+      "mfr": "Rheem Manufacturing",
+      "brand": "FRIGIDAIRE PROFESSIONAL\u00ae",
+      "trade": "Electrolux Home Products",
+      "series": "Professional Series"
+    },
+    "PRFS": {
+      "mfr": "Rheem Manufacturing",
+      "brand": "FRIGIDAIRE PROFESSIONAL\u00ae",
+      "trade": "Electrolux Home Products",
+      "series": "Professional Series"
+    },
+    "DF70": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "DF7 Series"
+    },
+    "DR70": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "DR7 Series"
+    },
+    "DR50": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "DR5 Series"
+    },
+    "DV20": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "DV2 Series"
+    },
+    "DC50": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "DC5 Series"
+    },
+    "FF70": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "FF7 Series"
+    },
+    "TV20": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "TV2 Series"
+    },
+    "TC50": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "TC5 Series"
+    },
+    "TR70": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "TR7 Series"
+    },
+    "TR50": {
+      "mfr": "Alliance Laundry Systems LLC",
+      "brand": "Speed Queen\u00ae",
+      "trade": "Speed Queen",
+      "series": "TR5 Series"
+    },
+    "XOU24": {
+      "mfr": "XO Appliance",
+      "brand": "XO\u00ae",
+      "trade": "XO Luxury",
+      "series": "XO Under-Counter Collection"
+    },
+    "C7CD": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "Caf\u00e9\u2122",
+      "trade": "Caf\u00e9 Specialty",
+      "series": "Specialty Drip Coffee Maker"
+    },
+    "C7CE": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "Caf\u00e9\u2122",
+      "trade": "Caf\u00e9 Espresso",
+      "series": "Bellissimo Espresso Machine"
+    },
+    "C9TM": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "Caf\u00e9\u2122",
+      "trade": "Caf\u00e9 Express",
+      "series": "Express Finish 2-Slice Toaster"
+    },
+    "C90A": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "Caf\u00e9\u2122",
+      "trade": "Caf\u00e9 Countertop",
+      "series": "Smart Countertop Oven"
+    },
+    "CES7": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "Caf\u00e9\u2122",
+      "trade": "Caf\u00e9 Commercial",
+      "series": "Slide-In Radiant Range"
+    },
+    "CHP9": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "Caf\u00e9\u2122",
+      "trade": "Caf\u00e9 Induction",
+      "series": "Touch Control Induction Cooktop"
+    },
+    "CVM5": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "Caf\u00e9\u2122",
+      "trade": "Caf\u00e9 Convection",
+      "series": "Over-The-Range Microwave Oven"
+    },
+    "CVE2": {
+      "mfr": "GE Appliances, a Haier company",
+      "brand": "Caf\u00e9\u2122",
+      "trade": "Caf\u00e9 Platinum Glass",
+      "series": "4-Door French-Door Refrigerator"
+    },
+    "WOSP": {
+      "mfr": "Beko US, Inc.",
+      "brand": "Beko\u00ae",
+      "trade": "Beko Master",
+      "series": "Single Wall Oven"
+    },
+    "SMC2": {
+      "mfr": "Sharp Electronics Corporation",
+      "brand": "Sharp\u00ae",
+      "trade": "Sharp Carousel",
+      "series": "Carousel Series"
+    },
+    "SMD2": {
+      "mfr": "Sharp Electronics Corporation",
+      "brand": "Sharp\u00ae",
+      "trade": "Sharp Microwave Drawer",
+      "series": "Microwave Drawer Series"
+    },
+    "SLER": {
+      "mfr": "Felix Storch, Inc.",
+      "brand": "Summit\u00ae",
+      "trade": "Summit Appliance",
+      "series": "Slide-In Range Series"
+    },
+    "ERFD": {
+      "mfr": "Element Electronics",
+      "brand": "Element\u00ae",
+      "trade": "Element Home",
+      "series": "French Door Refrigerator"
+    },
+    "EUF1": {
+      "mfr": "Element Electronics",
+      "brand": "Element\u00ae",
+      "trade": "Element Home",
+      "series": "Upright Freezer Series"
+    },
+    "EUF2": {
+      "mfr": "Element Electronics",
+      "brand": "Element\u00ae",
+      "trade": "Element Home",
+      "series": "Upright Freezer Series"
+    }
+  }
+}

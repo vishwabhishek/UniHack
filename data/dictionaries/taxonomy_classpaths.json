@@ -1,0 +1,655 @@
+{
+  "rules": [
+    {
+      "id": "dishwasher",
+      "keywords": [
+        "dishwasher",
+        "built-in dishwasher",
+        "dishwash"
+      ],
+      "dept": "Appliances",
+      "class_name": "Large Appliances",
+      "fine": "Dishwashers",
+      "classpath": "Appliances & Consumer Electronics>Kitchen Appliances>Built-In Dishwashers",
+      "unspsc": "52141505",
+      "product_name": "Dishwasher",
+      "attribute_template": [
+        "Series",
+        "Model",
+        "Number of Wash Cycles",
+        "Voltage Rating",
+        "Amperage Rating",
+        "Mounting Type",
+        "Plug Type",
+        "Size",
+        "Depth With Door Open",
+        "Minimum Height",
+        "Maximum Height",
+        "Sound Level",
+        "Material",
+        "Color",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "refrigerator",
+      "keywords": [
+        "fridge",
+        "refrigerator",
+        "freezer",
+        "cf fridge",
+        "cf freezer"
+      ],
+      "dept": "Appliances",
+      "class_name": "Large Appliances",
+      "fine": "Refrigerators & Freezers",
+      "classpath": "Appliances & Consumer Electronics>Kitchen Appliances>Refrigerators",
+      "unspsc": "52141501",
+      "product_name": "Refrigerator",
+      "attribute_template": [
+        "Series",
+        "Capacity",
+        "Voltage Rating",
+        "Amperage Rating",
+        "Configuration",
+        "Defrost Type",
+        "Installation Type",
+        "Size",
+        "Sound Level",
+        "Material",
+        "Color",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "range_cooktop",
+      "keywords": [
+        "range",
+        "cooktop",
+        "wall oven",
+        "oven"
+      ],
+      "dept": "Appliances",
+      "class_name": "Large Appliances",
+      "fine": "Ranges & Cooktops",
+      "classpath": "Appliances & Consumer Electronics>Kitchen Appliances>Ranges",
+      "unspsc": "52141515",
+      "product_name": "Range",
+      "attribute_template": [
+        "Series",
+        "Fuel Type",
+        "Number of Burners/Elements",
+        "Voltage Rating",
+        "Amperage Rating",
+        "Size",
+        "Oven Capacity",
+        "Control Type",
+        "Material",
+        "Color",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "microwave",
+      "keywords": [
+        "microwave",
+        "otr microwave",
+        "mocrowave"
+      ],
+      "dept": "Appliances",
+      "class_name": "Small Appliances",
+      "fine": "Microwaves",
+      "classpath": "Appliances & Consumer Electronics>Kitchen Appliances>Microwave Ovens",
+      "unspsc": "52141507",
+      "product_name": "Microwave Oven",
+      "attribute_template": [
+        "Series",
+        "Capacity",
+        "Wattage Rating",
+        "Voltage Rating",
+        "Mounting Type",
+        "Turntable Diameter",
+        "Number of Power Levels",
+        "Material",
+        "Color",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "washer_dryer",
+      "keywords": [
+        "dryer",
+        "washer",
+        "laundry center",
+        "elect dryer",
+        "gas dryer",
+        "elect washer"
+      ],
+      "dept": "Appliances",
+      "class_name": "Large Appliances",
+      "fine": "Washers & Dryers",
+      "classpath": "Appliances & Consumer Electronics>Laundry Appliances>Washers & Dryers",
+      "unspsc": "52141600",
+      "product_name": "Dryer",
+      "attribute_template": [
+        "Series",
+        "Load Type",
+        "Capacity",
+        "Voltage Rating",
+        "Amperage Rating",
+        "Fuel Type",
+        "Number of Cycles",
+        "Material",
+        "Color",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "beverage_center",
+      "keywords": [
+        "beverage center"
+      ],
+      "dept": "Appliances",
+      "class_name": "Large Appliances",
+      "fine": "Beverage Centers",
+      "classpath": "Appliances & Consumer Electronics>Kitchen Appliances>Beverage Centers",
+      "unspsc": "52141503",
+      "product_name": "Beverage Center",
+      "attribute_template": [
+        "Series",
+        "Capacity",
+        "Voltage Rating",
+        "Amperage Rating",
+        "Installation Type",
+        "Door Type",
+        "Number of Zones",
+        "Material",
+        "Color",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "coffee_maker",
+      "keywords": [
+        "coffee maker",
+        "espresso",
+        "toaster",
+        "toast oven"
+      ],
+      "dept": "Appliances",
+      "class_name": "Small Appliances",
+      "fine": "Coffee Makers & Toasters",
+      "classpath": "Appliances & Consumer Electronics>Small Appliances>Coffee & Specialty Appliances",
+      "unspsc": "52141526",
+      "product_name": "Coffee Maker",
+      "attribute_template": [
+        "Series",
+        "Capacity",
+        "Wattage Rating",
+        "Voltage Rating",
+        "Control Type",
+        "Housing Material",
+        "Color",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "composite_decking",
+      "keywords": [
+        "decking",
+        "sq edge",
+        "grooved",
+        "enhance basics",
+        "enhance naturals",
+        "transcend",
+        "vintage azek",
+        "pvc decking"
+      ],
+      "dept": "Building Materials",
+      "class_name": "Decking & Railing",
+      "fine": "Composite Decking",
+      "classpath": "Building Materials>Decking & Railing>Composite Decking",
+      "unspsc": "30103603",
+      "product_name": "Decking Board",
+      "attribute_template": [
+        "Series",
+        "Collection",
+        "Edge Profile",
+        "Thickness",
+        "Width",
+        "Length",
+        "Material",
+        "Color",
+        "Texture",
+        "Fastening Method",
+        "Warranty",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "railing_systems",
+      "keywords": [
+        "rail kit",
+        "rail panel",
+        "t-rail",
+        "classic horiz",
+        "baluster",
+        "balusters",
+        "finyline",
+        "gate"
+      ],
+      "dept": "Building Materials",
+      "class_name": "Decking & Railing",
+      "fine": "Railing Systems",
+      "classpath": "Building Materials>Decking & Railing>Railing Systems",
+      "unspsc": "30103604",
+      "product_name": "Railing Kit",
+      "attribute_template": [
+        "Series",
+        "Railing Type",
+        "Baluster Type",
+        "Length",
+        "Height",
+        "Orientation",
+        "Material",
+        "Color",
+        "Includes",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "post_accessories",
+      "keywords": [
+        "post sleeve",
+        "post trim",
+        "post cap",
+        "blank post",
+        "support post"
+      ],
+      "dept": "Building Materials",
+      "class_name": "Decking & Railing",
+      "fine": "Post Sleeves & Caps",
+      "classpath": "Building Materials>Decking & Railing>Post Sleeves & Caps",
+      "unspsc": "30103605",
+      "product_name": "Post Sleeve",
+      "attribute_template": [
+        "Series",
+        "Accessory Type",
+        "Nominal Size",
+        "Length/Height",
+        "Material",
+        "Color",
+        "Installation Type",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "doors_windows",
+      "keywords": [
+        "patio dr",
+        "slider",
+        "patio door",
+        "gliding patio",
+        "window",
+        "skylight",
+        "roof window"
+      ],
+      "dept": "Building Materials",
+      "class_name": "Doors & Windows",
+      "fine": "Patio Doors & Windows",
+      "classpath": "Building Materials>Doors & Windows>Patio Doors",
+      "unspsc": "30171505",
+      "product_name": "Patio Door",
+      "attribute_template": [
+        "Series",
+        "Door/Window Type",
+        "Size",
+        "Glass Type",
+        "Frame Material",
+        "Interior Color",
+        "Exterior Color",
+        "Handing",
+        "Screen Included",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "sheathing_panels",
+      "keywords": [
+        "zip",
+        "sheathing",
+        "sub floor",
+        "osb",
+        "gypsum",
+        "board",
+        "drywall"
+      ],
+      "dept": "Building Materials",
+      "class_name": "Lumber & Composites",
+      "fine": "Structural Panels & Sheathing",
+      "classpath": "Building Materials>Lumber & Composites>Structural Panels",
+      "unspsc": "30103601",
+      "product_name": "Insulated Sheathing Panel",
+      "attribute_template": [
+        "Series",
+        "Panel Type",
+        "Thickness",
+        "Width",
+        "Length",
+        "R-Value",
+        "Edge Profile",
+        "Material",
+        "Standard/Approvals",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "led_bulbs",
+      "keywords": [
+        "led",
+        "lamp",
+        "bulb",
+        "br40",
+        "a19",
+        "par38",
+        "t8",
+        "med 27k",
+        "med 50k",
+        "cct",
+        "smart bulb"
+      ],
+      "dept": "Lighting & Electrical",
+      "class_name": "Lamps & Bulbs",
+      "fine": "LED Bulbs",
+      "classpath": "Lighting & Electrical>Lamps & Bulbs>LED Bulbs",
+      "unspsc": "39101628",
+      "product_name": "LED Bulb",
+      "attribute_template": [
+        "Wattage Equivalent",
+        "Actual Wattage",
+        "Bulb Shape",
+        "Base Type",
+        "Color Temperature",
+        "Lumens",
+        "Voltage Rating",
+        "Dimmable",
+        "Average Life",
+        "Beam Angle",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "luminaires_fixtures",
+      "keywords": [
+        "chandelier",
+        "pendant",
+        "vanity",
+        "sconce",
+        "flush mount",
+        "light fixture",
+        "fan",
+        "ceiling fan"
+      ],
+      "dept": "Lighting & Electrical",
+      "class_name": "Fixtures",
+      "fine": "Luminaires & Fixtures",
+      "classpath": "Lighting & Electrical>Fixtures>Chandeliers & Pendants",
+      "unspsc": "39111500",
+      "product_name": "Chandelier",
+      "attribute_template": [
+        "Series",
+        "Fixture Type",
+        "Number of Lights",
+        "Bulb Type",
+        "Socket Type",
+        "Voltage Rating",
+        "Dimensions",
+        "Finish",
+        "Material",
+        "Mounting Type",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "cord_grips_fittings",
+      "keywords": [
+        "cord grip",
+        "connector",
+        "conduit",
+        "coupling",
+        "fitting",
+        "cable connector"
+      ],
+      "dept": "Lighting & Electrical",
+      "class_name": "Fittings & Conduit",
+      "fine": "Cord Grips & Fittings",
+      "classpath": "Lighting & Electrical>Fittings & Conduit>Cord Grips",
+      "unspsc": "39121400",
+      "product_name": "Cord Grip",
+      "attribute_template": [
+        "Trade Size",
+        "Cable Range",
+        "Thread Type",
+        "Material",
+        "Finish",
+        "Enclosure Rating",
+        "Temperature Rating",
+        "Standard/Approvals",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "wiring_devices",
+      "keywords": [
+        "cord",
+        "wire",
+        "receptacle",
+        "switch",
+        "outlet",
+        "plug",
+        "extension cord",
+        "cable"
+      ],
+      "dept": "Lighting & Electrical",
+      "class_name": "Wiring Devices & Wire",
+      "fine": "Wire & Receptacles",
+      "classpath": "Lighting & Electrical>Wiring Devices>Industrial Cord & Cable",
+      "unspsc": "26121600",
+      "product_name": "Industrial Cord",
+      "attribute_template": [
+        "Conductor Gauge/Count",
+        "Cord Type",
+        "Length",
+        "Voltage Rating",
+        "Amperage Rating",
+        "Jacket Material",
+        "Color",
+        "Standard/Approvals",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "sanding_abrasives",
+      "keywords": [
+        "sanding belt",
+        "stikit",
+        "disc/box",
+        "film disc",
+        "hook & loop",
+        "abrasive",
+        "cubitron",
+        "abranet",
+        "hiolit",
+        "grinding wheel",
+        "cut off disc"
+      ],
+      "dept": "Tools & Hardware",
+      "class_name": "Abrasives",
+      "fine": "Sanding Belts & Discs",
+      "classpath": "Tools & Hardware>Abrasives>Sanding Belts & Discs",
+      "unspsc": "31191500",
+      "product_name": "Sanding Belt",
+      "attribute_template": [
+        "Series",
+        "Abrasive Type",
+        "Grit",
+        "Width",
+        "Length/Diameter",
+        "Backing Material",
+        "Attachment Type",
+        "Pack Quantity",
+        "Recommended Application",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "cutting_tool_accessories",
+      "keywords": [
+        "blade",
+        "saw blade",
+        "router bit",
+        "drill bit",
+        "plug cutter",
+        "hole saw",
+        "sawstop",
+        "marples",
+        "carbide bit"
+      ],
+      "dept": "Tools & Hardware",
+      "class_name": "Accessories",
+      "fine": "Blades & Bits",
+      "classpath": "Tools & Hardware>Power Tool Accessories>Blades & Bits",
+      "unspsc": "27112800",
+      "product_name": "Saw Blade",
+      "attribute_template": [
+        "Series",
+        "Diameter",
+        "Number of Teeth",
+        "Arbor Size",
+        "Kerf Thickness",
+        "Hook Angle",
+        "Tip Material",
+        "Cutting Application",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "power_tools_machinery",
+      "keywords": [
+        "planing machine",
+        "planer",
+        "blower",
+        "sander",
+        "drill press",
+        "miter saw",
+        "table saw",
+        "power tool",
+        "20v max"
+      ],
+      "dept": "Tools & Hardware",
+      "class_name": "Power Tools",
+      "fine": "Power Tools & Machinery",
+      "classpath": "Tools & Hardware>Power Tools>Cordless Power Tools",
+      "unspsc": "27112700",
+      "product_name": "Power Tool",
+      "attribute_template": [
+        "Series",
+        "Tool Type",
+        "Voltage Rating",
+        "Motor Type",
+        "Power Source",
+        "No Load Speed",
+        "Tool Weight",
+        "Includes",
+        "Warranty",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "hand_tools_measuring",
+      "keywords": [
+        "tape",
+        "gauge",
+        "measuring",
+        "trowel",
+        "file",
+        "holster",
+        "pencil",
+        "screwdriver",
+        "featherpro",
+        "featherboard"
+      ],
+      "dept": "Tools & Hardware",
+      "class_name": "Hand Tools",
+      "fine": "Measuring & Layout Tools",
+      "classpath": "Tools & Hardware>Hand Tools>Measuring & Layout Tools",
+      "unspsc": "27111800",
+      "product_name": "Measuring Tool",
+      "attribute_template": [
+        "Tool Type",
+        "Measurement Range",
+        "Graduations",
+        "Material",
+        "Blade Width",
+        "Case Material",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "safety_ppe",
+      "keywords": [
+        "eyewear",
+        "glasses",
+        "safety glasses",
+        "smoke detector",
+        "fire alarm",
+        "sabre",
+        "firewatch",
+        "earplug"
+      ],
+      "dept": "Safety & Security",
+      "class_name": "Personal Protective Equipment",
+      "fine": "Eye Protection & Safety",
+      "classpath": "Safety & Security>Personal Protective Equipment>Safety Glasses",
+      "unspsc": "46181802",
+      "product_name": "Safety Glasses",
+      "attribute_template": [
+        "Series",
+        "Frame Color",
+        "Lens Color",
+        "Lens Coating",
+        "Frame Style",
+        "Standard/Approvals",
+        "UV Protection",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "fasteners_hardware",
+      "keywords": [
+        "hinge",
+        "nail",
+        "screw",
+        "fastener",
+        "latch",
+        "bracket"
+      ],
+      "dept": "Hardware",
+      "class_name": "Fasteners & Hardware",
+      "fine": "Fasteners & Hinges",
+      "classpath": "Hardware>Fasteners>Commercial Hinges & Fasteners",
+      "unspsc": "31162403",
+      "product_name": "Commercial Hinge",
+      "attribute_template": [
+        "Hardware Type",
+        "Size",
+        "Material",
+        "Finish",
+        "Mounting Type",
+        "Load Capacity",
+        "Standard/Approvals",
+        "Additional Information"
+      ]
+    }
+  ]
+}
