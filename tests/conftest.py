@@ -20,25 +20,33 @@ import pytest
 @pytest.fixture(scope="session")
 def project_root() -> Path:
     """Return the absolute path to the project root directory."""
-    return Path("/home/abhishek-vishwakarma/Documents/Hackathons/Unilog")
+    return Path(__file__).resolve().parent.parent
 
 
 @pytest.fixture(scope="session")
 def raw_input_path(project_root: Path) -> Path:
     """Return the path to the 1,000 raw supplier input CSV."""
-    p = project_root / "Unihack_ Sample Dataset - Input.csv"
-    if not p.exists():
-        p = project_root / "data" / "raw" / "Unihack_ Sample Dataset - Input.csv"
-    return p
+    candidates = [
+        project_root / "Unihack_ Sample Dataset - Input.csv",
+        project_root / "data" / "raw" / "Unihack_ Sample Dataset - Input.csv",
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return candidates[0]
 
 
 @pytest.fixture(scope="session")
 def expected_output_path(project_root: Path) -> Path:
     """Return the path to the 252-column ground truth delivery format CSV."""
-    p = project_root / "Unihack_ Expected Output - Delivery Format.csv"
-    if not p.exists():
-        p = project_root / "data" / "ground_truth" / "Unihack_ Expected Output - Delivery Format.csv"
-    return p
+    candidates = [
+        project_root / "Unihack_ Expected Output - Delivery Format.csv",
+        project_root / "data" / "ground_truth" / "Unihack_ Expected Output - Delivery Format.csv",
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return candidates[0]
 
 
 # ---------------------------------------------------------------------------
