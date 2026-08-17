@@ -1,0 +1,25 @@
+# Environment & Dependencies
+.venv/
+env/
+venv/
+node_modules/
+src/frontend/node_modules/
+dist/
+src/frontend/dist/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Logs & System
+*.log
+.DS_Store
+.system_generated/
+scratch/
+ui_audit/
