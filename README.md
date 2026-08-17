@@ -113,8 +113,8 @@ The web dashboard is an enterprise single-page application built with **React 18
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/Abhishek-Vishwakarma/Unilog-UniHack-2026.git
-cd Unilog-UniHack-2026
+git clone https://github.com/vishwabhishek/UniHack.git
+cd UniHack
 
 # 2. Run the unified launcher script
 ./scripts/start_dashboard.sh
