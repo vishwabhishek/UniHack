@@ -81,31 +81,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-[#080C14]/90 backdrop-blur-xl border-b border-white/[0.08] w-full overflow-hidden shadow-glass">
-      {/* Top Environment & Metadata Ribbon */}
-      <div className="hidden xl:flex items-center justify-between px-4 sm:px-6 py-1 bg-gradient-to-r from-[#0B101D] via-[#0F1626] to-[#0B101D] border-b border-white/[0.04] text-[11px] text-slate-400 font-mono">
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow shadow-glow-emerald"></span>
-            <span className="text-white font-bold tracking-wider uppercase">PIM WORKBENCH v2.4</span>
-          </div>
-          <span className="text-slate-700">/</span>
-          <span>SCHEMA: <strong className="text-cyan-300">UNILOG 252-COL STANDARD</strong></span>
-          <span className="text-slate-700">/</span>
-          <span>DATASET: <strong className="text-slate-200">1,000 SKUs · 76 MFGS</strong></span>
-        </div>
-        <div className="flex items-center space-x-3">
-          <span className="flex items-center space-x-1 text-emerald-400 font-semibold">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>306/306 ASSERTIONS PASSED</span>
-          </span>
-          <span className="text-slate-700">/</span>
-          <span className="text-slate-300 flex items-center space-x-1">
-            <Zap className="w-3 h-3 text-cyan-400" />
-            <span>LATENCY: <strong className="text-cyan-300 font-bold">11.4ms AVG</strong></span>
-          </span>
-        </div>
-      </div>
-
       {/* Main Command Bar */}
       <div className="max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-3">
