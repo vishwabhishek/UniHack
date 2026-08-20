@@ -138,12 +138,40 @@ class CatalogState:
             self.initialize()
         filtered = self._products_list
 
-        # Search query matching MPN, Part Desc, Brand, Manufacturer, Classpath
+        # Search query matching MPN, Part Desc, Brand, Manufacturer, Classpath, UNSPSC, LOVs, Specs
         if search and search.strip():
-            tokens = [t.lower() for t in search.strip().split() if t]
+            raw_query = search.strip().lower()
+            tokens = [t for t in raw_query.split() if t]
+            query_alphanumeric = "".join(c for c in raw_query if c.isalnum())
+            
             def matches_search(p: EnrichedProduct) -> bool:
-                haystack = f"{p.mfg_part_number} {p.raw.part_desc} {p.short_desc} {p.brand_name} {p.manufacturer_name} {p.classpath} {p.part_number} {p.sku}".lower()
-                return all(token in haystack for token in tokens)
+                # 1. Build comprehensive search haystack
+                attr_text = " ".join(f"{a.label} {a.value} {a.uom or ''}" for a in p.attributes)
+                features_text = " ".join(p.item_features or [])
+                raw_brands = f"{p.raw.e1_brand or ''} {p.raw.unilog_brand or ''} {p.raw.dib_brand or ''} {p.raw.part_manuf or ''}"
+                
+                haystack = (
+                    f"{p.mfg_part_number} {p.raw.mfg_part_num or ''} {p.part_number} {p.sku} "
+                    f"{p.raw.row_id or ''} #{p.raw.row_id or ''} "
+                    f"{p.unspsc} {p.dept} {p.class_name} {p.fine} {p.classpath} "
+                    f"{p.brand_name} {p.manufacturer_name} {p.trade_name or ''} {raw_brands} "
+                    f"{p.raw.part_desc} {p.short_desc} {p.product_name} {p.invoice_desc} "
+                    f"{p.mobile_desc} {p.long_desc1} {p.marketing_description} {features_text} "
+                    f"{attr_text}"
+                ).lower()
+                
+                # Check standard token inclusion
+                if all(token in haystack for token in tokens):
+                    return True
+                
+                # Check alphanumeric-only inclusion (e.g. DW5SST matching DW-5SST or 5014 matching 50-1/4)
+                if query_alphanumeric and len(query_alphanumeric) >= 3:
+                    haystack_alphanumeric = "".join(c for c in haystack if c.isalnum())
+                    if query_alphanumeric in haystack_alphanumeric:
+                        return True
+                
+                return False
+
             filtered = [p for p in filtered if matches_search(p)]
 
         # Status filter

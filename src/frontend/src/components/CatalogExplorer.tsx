@@ -1,21 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ProductListItem, FilterOptionItem } from '../types';
 import { fetchProducts, fetchFilters } from '../services/api';
 import { useToast } from './Toast';
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Search, X } from 'lucide-react';
 
 interface CatalogExplorerProps {
   onInspectProduct: (productId: string) => void;
   onEditProduct: (productId: string) => void;
   initialStatus?: string;
   globalSearch?: string;
+  onSearchChange?: (q: string) => void;
 }
 
 export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   onInspectProduct,
   onEditProduct,
   initialStatus = 'All',
-  globalSearch = ''
+  globalSearch = '',
+  onSearchChange
 }) => {
   const { showToast } = useToast();
   const [products, setProducts] = useState<ProductListItem[]>([]);
@@ -24,16 +26,20 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   const [totalCount, setTotalCount] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(20);
-  const [search, setSearch] = useState<string>(globalSearch);
+  const [searchTerm, setSearchTerm] = useState<string>(globalSearch);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
 
+  const debounceTimerRef = useRef<any>(null);
+
   useEffect(() => {
     setSelectedStatus(initialStatus);
+    setPage(1);
   }, [initialStatus]);
 
   useEffect(() => {
-    setSearch(globalSearch);
+    setSearchTerm(globalSearch);
+    setPage(1);
   }, [globalSearch]);
 
   useEffect(() => {
@@ -42,7 +48,7 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
 
   useEffect(() => {
     loadData();
-  }, [page, limit, search, selectedCategory, selectedStatus]);
+  }, [page, limit, searchTerm, selectedCategory, selectedStatus]);
 
   const loadFilters = async () => {
     try {
@@ -59,7 +65,7 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
       const res = await fetchProducts({
         page,
         limit,
-        search: search.trim() || undefined,
+        search: searchTerm.trim() ? searchTerm.trim() : undefined,
         category: selectedCategory || undefined,
         status: selectedStatus !== 'All' ? selectedStatus : undefined
       });
@@ -70,6 +76,32 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
       showToast('Error', 'Failed to fetch catalog items', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearchInputChange = (val: string) => {
+    setSearchTerm(val);
+    setPage(1);
+    if (onSearchChange) {
+      onSearchChange(val);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setPage(1);
+    if (onSearchChange) {
+      onSearchChange('');
+    }
+  };
+
+  const handleClearAllFilters = () => {
+    setSearchTerm('');
+    setSelectedStatus('All');
+    setSelectedCategory('');
+    setPage(1);
+    if (onSearchChange) {
+      onSearchChange('');
     }
   };
 
@@ -85,8 +117,6 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
                 i < active
                   ? score >= 0.85
                     ? 'on'
-                    : score >= 0.70
-                    ? 'on amber'
                     : 'on amber'
                   : ''
               }
@@ -117,11 +147,36 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
     <div className="panel bg-[var(--surface-2)] border border-[var(--border)] rounded-[10px] overflow-hidden font-sans">
       
       {/* Panel Head */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-[16px_18px] border-b border-[var(--border)] gap-3">
-        <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Catalog explorer</h3>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center p-[16px_18px] border-b border-[var(--border)] gap-3">
+        
+        <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
+          <h3 className="text-[13px] font-semibold text-[var(--text-primary)] whitespace-nowrap">
+            Catalog explorer
+          </h3>
 
-        {/* Filter Chips */}
-        <div className="flex flex-wrap items-center gap-2">
+          {/* In-Panel Search Bar */}
+          <div className="relative w-full sm:w-72">
+            <Search className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => handleSearchInputChange(e.target.value)}
+              placeholder="search SKU, MPN, brand, UNSPSC…"
+              className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md pl-9 pr-7 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] font-mono focus:outline-none focus:border-[var(--cyan)]"
+            />
+            {searchTerm && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-white p-0.5 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filter Chips & Dropdowns */}
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           {/* Status Quick Filters */}
           {['All', 'Validated', 'Enriched', 'Flagged'].map((st) => (
             <button
@@ -191,8 +246,16 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
               ))
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-[var(--text-muted)] font-mono text-xs">
-                  No catalog records matching the active filter criteria.
+                <td colSpan={6} className="py-12 text-center text-[var(--text-muted)] font-mono text-xs space-y-3">
+                  <p>No catalog records matching active search query &quot;{searchTerm}&quot; or filter criteria.</p>
+                  {(searchTerm || selectedStatus !== 'All' || selectedCategory) && (
+                    <button
+                      onClick={handleClearAllFilters}
+                      className="px-3 py-1.5 rounded-md bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--cyan)] hover:underline cursor-pointer"
+                    >
+                      Clear search &amp; reset all filters
+                    </button>
+                  )}
                 </td>
               </tr>
             ) : (
@@ -235,6 +298,11 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
         <div>
           Showing <span className="text-[var(--text-primary)]">{products.length}</span> of{' '}
           <span className="text-[var(--text-primary)]">{totalCount}</span> SKUs
+          {searchTerm && (
+            <span className="text-[var(--cyan)] ml-2">
+              (matching &quot;{searchTerm}&quot;)
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

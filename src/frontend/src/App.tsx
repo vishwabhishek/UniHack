@@ -144,6 +144,7 @@ const DashboardContent: React.FC = () => {
                 onEditProduct={handleEdit}
                 initialStatus={catalogFilterStatus}
                 globalSearch={globalSearch}
+                onSearchChange={setGlobalSearch}
               />
             )}
 
