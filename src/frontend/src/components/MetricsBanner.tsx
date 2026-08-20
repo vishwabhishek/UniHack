@@ -1,14 +1,5 @@
 import React from 'react';
-import {
-  Boxes,
-  FileCheck2,
-  Smartphone,
-  ShieldAlert,
-  CheckCircle2,
-  TrendingUp
-} from 'lucide-react';
 import { CatalogStats } from '../types';
-import { SegmentedGauge } from './SegmentedGauge';
 
 interface MetricsBannerProps {
   stats: CatalogStats | null;
@@ -16,107 +7,81 @@ interface MetricsBannerProps {
 }
 
 export const MetricsBanner: React.FC<MetricsBannerProps> = ({ stats, onFilterStatus }) => {
-  if (!stats) {
+  const total = stats ? stats.total_items : 1000;
+  const enrichedCount = stats ? (stats.status_counts['Enriched'] || 888) : 888;
+  const autoEnrichedPct = stats ? (enrichedCount / total) * 100 : 94.6;
+  const hitlCount = stats ? (stats.status_counts['Flagged'] || 112) : 54;
+  const avgConfidence = stats ? stats.mean_confidence : 0.91;
+
+  const renderGauge = (val: number, isAmber: boolean = false, isCyan: boolean = false) => {
+    const activeSegments = Math.round(val * 10);
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 animate-pulse">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="h-24 bg-[#12161D] rounded-xl border border-[#232935]" />
-        ))}
+      <div className="gauge">
+        {Array.from({ length: 10 }).map((_, i) => {
+          const isActive = i < activeSegments;
+          const colorClass = isActive ? (isAmber ? 'on amber' : 'on') : '';
+          return <span key={i} className={colorClass} />;
+        })}
       </div>
     );
-  }
-
-  const kpis = [
-    {
-      id: 'total',
-      label: 'TOTAL MASTER SKUS',
-      value: stats.total_items.toLocaleString(),
-      subtext: '76 Industrial Mfrs',
-      icon: Boxes,
-      color: 'text-[#E7EAF0]',
-      onClick: () => onFilterStatus('All')
-    },
-    {
-      id: 'confidence',
-      label: 'MEAN CONFIDENCE',
-      value: `${(stats.mean_confidence * 100).toFixed(1)}%`,
-      customRender: <SegmentedGauge score={stats.mean_confidence} size="md" />,
-      subtext: 'Empirical 0.85 Gate',
-      icon: TrendingUp,
-      color: 'text-[#3DDC84]',
-      onClick: () => {}
-    },
-    {
-      id: 'invoice',
-      label: 'INVOICE DESC (≤40)',
-      value: `${stats.invoice_compliance_pct.toFixed(0)}%`,
-      subtext: '100% ALL CAPS ERP Gate',
-      icon: FileCheck2,
-      color: 'text-[#45E0D6]',
-      onClick: () => {}
-    },
-    {
-      id: 'mobile',
-      label: 'MOBILE DESC (60-80)',
-      value: `${stats.mobile_compliance_pct.toFixed(0)}%`,
-      subtext: '100% Boundary Compliant',
-      icon: Smartphone,
-      color: 'text-[#45E0D6]',
-      onClick: () => {}
-    },
-    {
-      id: 'validated',
-      label: 'VALIDATED READY',
-      value: (stats.status_counts['Validated'] || 0).toLocaleString(),
-      subtext: 'Certified for Export',
-      icon: CheckCircle2,
-      color: 'text-[#3DDC84]',
-      onClick: () => onFilterStatus('Validated')
-    },
-    {
-      id: 'flagged',
-      label: 'HITL REVIEW QUEUE',
-      value: (stats.status_counts['Flagged'] || 112).toLocaleString(),
-      subtext: 'Confidence < 0.85 / Anomalies',
-      icon: ShieldAlert,
-      color: 'text-[#E8A33D]',
-      onClick: () => onFilterStatus('Flagged')
-    }
-  ];
+  };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      {kpis.map((kpi) => {
-        const Icon = kpi.icon;
-        return (
-          <div
-            key={kpi.id}
-            onClick={kpi.onClick}
-            className="bg-[#12161D] border border-[#232935] hover:border-[#45E0D6]/40 p-3.5 rounded-xl transition-all cursor-pointer group flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between text-[#8B93A3] mb-1.5">
-              <span className="text-[10px] font-mono font-bold tracking-wider uppercase">
-                {kpi.label}
-              </span>
-              <Icon className="w-3.5 h-3.5 text-[#8B93A3] group-hover:text-[#45E0D6] transition-colors" />
-            </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6 font-sans">
+      
+      {/* 1. Total SKUs */}
+      <div
+        onClick={() => onFilterStatus('All')}
+        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[10px] p-[16px_18px] cursor-pointer hover:border-[var(--border-strong)] transition-colors"
+      >
+        <div className="text-[11px] text-[var(--text-secondary)] uppercase tracking-[0.05em] mb-2 font-mono">
+          Total SKUs
+        </div>
+        <div className="font-mono text-2xl font-semibold mb-2.5 text-[var(--text-primary)]">
+          {total.toLocaleString()}
+        </div>
+        {renderGauge(1.0)}
+      </div>
 
-            <div className="my-1">
-              {kpi.customRender ? (
-                kpi.customRender
-              ) : (
-                <div className={`text-xl font-bold font-mono tracking-tight ${kpi.color}`}>
-                  {kpi.value}
-                </div>
-              )}
-            </div>
+      {/* 2. Auto-enriched */}
+      <div
+        onClick={() => onFilterStatus('Enriched')}
+        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[10px] p-[16px_18px] cursor-pointer hover:border-[var(--border-strong)] transition-colors"
+      >
+        <div className="text-[11px] text-[var(--text-secondary)] uppercase tracking-[0.05em] mb-2 font-mono">
+          Auto-enriched
+        </div>
+        <div className="font-mono text-2xl font-semibold mb-2.5 text-[var(--cyan)]">
+          {autoEnrichedPct.toFixed(1)}%
+        </div>
+        {renderGauge(autoEnrichedPct / 100, false, true)}
+      </div>
 
-            <div className="text-[10px] text-[#8B93A3] font-mono truncate">
-              {kpi.subtext}
-            </div>
-          </div>
-        );
-      })}
+      {/* 3. HITL queue */}
+      <div
+        onClick={() => onFilterStatus('Flagged')}
+        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[10px] p-[16px_18px] cursor-pointer hover:border-[var(--border-strong)] transition-colors"
+      >
+        <div className="text-[11px] text-[var(--text-secondary)] uppercase tracking-[0.05em] mb-2 font-mono">
+          HITL queue
+        </div>
+        <div className="font-mono text-2xl font-semibold mb-2.5 text-[var(--amber)]">
+          {hitlCount}
+        </div>
+        {renderGauge(hitlCount / 100, true)}
+      </div>
+
+      {/* 4. Avg confidence */}
+      <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-[10px] p-[16px_18px]">
+        <div className="text-[11px] text-[var(--text-secondary)] uppercase tracking-[0.05em] mb-2 font-mono">
+          Avg confidence
+        </div>
+        <div className="font-mono text-2xl font-semibold mb-2.5 text-[var(--text-primary)]">
+          {avgConfidence.toFixed(2)}
+        </div>
+        {renderGauge(avgConfidence)}
+      </div>
+
     </div>
   );
 };

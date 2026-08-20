@@ -1,31 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Search,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Edit3,
-  Copy,
-  Check,
-  Tag,
-  ArrowUpDown
-} from 'lucide-react';
 import { ProductListItem, FilterOptionItem } from '../types';
 import { fetchProducts, fetchFilters } from '../services/api';
 import { useToast } from './Toast';
-import { SegmentedGauge } from './SegmentedGauge';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 
 interface CatalogExplorerProps {
   onInspectProduct: (productId: string) => void;
   onEditProduct: (productId: string) => void;
   initialStatus?: string;
+  globalSearch?: string;
 }
 
 export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   onInspectProduct,
   onEditProduct,
-  initialStatus = 'All'
+  initialStatus = 'All',
+  globalSearch = ''
 }) => {
   const { showToast } = useToast();
   const [products, setProducts] = useState<ProductListItem[]>([]);
@@ -34,14 +24,17 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   const [totalCount, setTotalCount] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(20);
-  const [search, setSearch] = useState<string>('');
+  const [search, setSearch] = useState<string>(globalSearch);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedStatus(initialStatus);
   }, [initialStatus]);
+
+  useEffect(() => {
+    setSearch(globalSearch);
+  }, [globalSearch]);
 
   useEffect(() => {
     loadFilters();
@@ -80,135 +73,125 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
     }
   };
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    showToast('Copied', text, 'success');
-    setTimeout(() => setCopiedId(null), 1500);
+  const renderMiniGauge = (score: number) => {
+    const active = Math.round(score * 10);
+    return (
+      <div className="flex items-center">
+        <div className="mini-gauge">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <span
+              key={i}
+              className={
+                i < active
+                  ? score >= 0.85
+                    ? 'on'
+                    : score >= 0.70
+                    ? 'on amber'
+                    : 'on amber'
+                  : ''
+              }
+            />
+          ))}
+        </div>
+        <span className="conf-val">{score.toFixed(2)}</span>
+      </div>
+    );
   };
 
-  const getStatusChip = (status: string) => {
-    switch (status) {
-      case 'Validated':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/25">
-            VALIDATED
-          </span>
-        );
-      case 'Flagged':
-      case 'Needs Human Review':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#E8A33D]/10 text-[#E8A33D] border border-[#E8A33D]/25">
-            FLAGGED (HITL)
-          </span>
-        );
-      case 'Draft':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#8B93A3]/10 text-[#8B93A3] border border-[#8B93A3]/25">
-            DRAFT
-          </span>
-        );
-      default: // Enriched
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#45E0D6]/10 text-[#45E0D6] border border-[#45E0D6]/25">
-            ENRICHED
-          </span>
-        );
+  const renderStatusChip = (st: string) => {
+    const clean = st.toLowerCase();
+    if (clean === 'validated') {
+      return <span className="chip validated">validated</span>;
+    } else if (clean === 'flagged' || clean === 'needs human review') {
+      return <span className="chip flagged">flagged</span>;
+    } else if (clean === 'draft') {
+      return <span className="chip draft">draft</span>;
+    } else {
+      return <span className="chip enriched">enriched</span>;
     }
   };
 
   const totalPages = Math.ceil(totalCount / limit) || 1;
 
   return (
-    <div className="bg-[#12161D] border border-[#232935] rounded-xl shadow-sm overflow-hidden flex flex-col font-sans">
+    <div className="panel bg-[var(--surface-2)] border border-[var(--border)] rounded-[10px] overflow-hidden font-sans">
       
-      {/* Control Bar: Search & Filter Toolbar */}
-      <div className="p-3.5 border-b border-[#232935] bg-[#12161D] flex flex-col sm:flex-row items-center justify-between gap-3">
-        
-        {/* Search Input */}
-        <div className="relative w-full sm:w-80">
-          <Search className="w-3.5 h-3.5 text-[#8B93A3] absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search SKU, MPN, brand, title..."
-            className="w-full pl-9 pr-3 py-1.5 bg-[#0B0E13] border border-[#232935] rounded-lg text-xs text-[#E7EAF0] placeholder-[#525B6C] focus:border-[#45E0D6] focus:outline-none font-sans transition-colors"
-          />
-        </div>
+      {/* Panel Head */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-[16px_18px] border-b border-[var(--border)] gap-3">
+        <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Catalog explorer</h3>
 
-        {/* Category & Status Filter Selectors */}
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
-          {/* Department Filter */}
+        {/* Filter Chips */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status Quick Filters */}
+          {['All', 'Validated', 'Enriched', 'Flagged'].map((st) => (
+            <button
+              key={st}
+              onClick={() => {
+                setSelectedStatus(st);
+                setPage(1);
+              }}
+              className={`chip-filter cursor-pointer transition-colors ${
+                selectedStatus === st
+                  ? 'border-[var(--cyan)] text-[var(--cyan)] bg-[var(--cyan-bg)]'
+                  : 'hover:text-[var(--text-primary)]'
+              }`}
+            >
+              status: {st.toLowerCase()}
+            </button>
+          ))}
+
+          {/* Department Selector */}
           <select
             value={selectedCategory}
             onChange={(e) => {
               setSelectedCategory(e.target.value);
               setPage(1);
             }}
-            className="px-2.5 py-1.5 bg-[#0B0E13] border border-[#232935] rounded-lg text-xs text-[#E7EAF0] focus:border-[#45E0D6] focus:outline-none font-sans"
+            className="chip-filter bg-[var(--surface-1)] text-[var(--text-secondary)] focus:outline-none cursor-pointer"
           >
-            <option value="">All Departments ({totalCount})</option>
-            {departments.map((dept) => (
-              <option key={dept.value} value={dept.value}>
-                {dept.label} ({dept.count})
+            <option value="">all categories ({totalCount})</option>
+            {departments.map((d) => (
+              <option key={d.value} value={d.value}>
+                {d.label}
               </option>
             ))}
           </select>
-
-          {/* Status Tabs */}
-          <div className="flex bg-[#0B0E13] p-0.5 rounded-lg border border-[#232935] font-mono text-[11px]">
-            {['All', 'Validated', 'Enriched', 'Flagged'].map((st) => (
-              <button
-                key={st}
-                onClick={() => {
-                  setSelectedStatus(st);
-                  setPage(1);
-                }}
-                className={`px-2.5 py-1 rounded font-bold transition-all ${
-                  selectedStatus === st
-                    ? 'bg-[#1A1F29] text-[#45E0D6] border border-[#232935]'
-                    : 'text-[#8B93A3] hover:text-white'
-                }`}
-              >
-                {st.toUpperCase()}
-              </button>
-            ))}
-          </div>
         </div>
-
       </div>
 
-      {/* Main Data Table */}
-      <div className="overflow-x-auto min-h-[420px]">
-        <table className="w-full text-left text-xs border-collapse">
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <colgroup>
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '15%' }} />
+            <col style={{ width: '28%' }} />
+            <col style={{ width: '16%' }} />
+            <col style={{ width: '11%' }} />
+            <col style={{ width: '12%' }} />
+          </colgroup>
           <thead>
-            <tr className="border-b border-[#232935] bg-[#0B0E13] text-[#8B93A3] font-mono text-[10px] uppercase tracking-wider">
-              <th className="py-2.5 px-3.5 w-14"># ROW</th>
-              <th className="py-2.5 px-3.5 w-32">MPN</th>
-              <th className="py-2.5 px-3.5 w-36">CANONICAL BRAND</th>
-              <th className="py-2.5 px-3.5">SYNTHESIZED TITLE / SHORT DESC</th>
-              <th className="py-2.5 px-3.5 w-36">UNSPSC / CLASSPATH</th>
-              <th className="py-2.5 px-3.5 w-28">CONFIDENCE</th>
-              <th className="py-2.5 px-3.5 w-24">STATUS</th>
-              <th className="py-2.5 px-3.5 w-20 text-right">ACTION</th>
+            <tr>
+              <th>SKU / MPN</th>
+              <th>Brand</th>
+              <th>Classpath</th>
+              <th>Confidence</th>
+              <th>Status</th>
+              <th className="text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#232935]">
+          <tbody>
             {loading ? (
-              Array.from({ length: 10 }).map((_, i) => (
+              Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
-                  <td colSpan={8} className="py-3 px-3.5">
-                    <div className="h-5 bg-[#1A1F29] rounded w-full" />
+                  <td colSpan={6} className="py-4 px-[18px]">
+                    <div className="h-4 bg-[var(--surface-1)] rounded w-full" />
                   </td>
                 </tr>
               ))
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-[#8B93A3] font-mono text-xs">
+                <td colSpan={6} className="py-12 text-center text-[var(--text-muted)] font-mono text-xs">
                   No catalog records matching the active filter criteria.
                 </td>
               </tr>
@@ -216,81 +199,29 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
               products.map((item) => (
                 <tr
                   key={item.id}
-                  className="hover:bg-[#1A1F29] transition-colors group cursor-pointer"
                   onClick={() => onInspectProduct(item.id)}
+                  className="cursor-pointer hover:bg-[rgba(255,255,255,0.015)] transition-colors"
                 >
-                  {/* Row ID */}
-                  <td className="py-2.5 px-3.5 font-mono text-[#8B93A3] text-[11px] tabular-nums">
-                    {item.row_id}
+                  <td className="mono cell-primary">
+                    {item.mfg_part_number || item.sku || `SKU-${item.row_id}`}
                   </td>
-
-                  {/* MPN */}
-                  <td className="py-2.5 px-3.5 font-mono font-bold text-white text-xs whitespace-nowrap">
-                    <div className="flex items-center space-x-1.5">
-                      <span>{item.mfg_part_number}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopy(item.mfg_part_number, `mpn-${item.id}`);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-[#8B93A3] hover:text-white transition-opacity"
-                        title="Copy MPN"
-                      >
-                        {copiedId === `mpn-${item.id}` ? <Check className="w-3 h-3 text-[#3DDC84]" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                    </div>
+                  <td className="cell-secondary">{item.brand_name || '— unresolved —'}</td>
+                  <td className="cell-secondary truncate max-w-[280px]" title={item.classpath}>
+                    {item.classpath || 'Industrial Component'}
                   </td>
-
-                  {/* Brand */}
-                  <td className="py-2.5 px-3.5 font-sans text-[#E7EAF0] text-xs font-semibold truncate max-w-[140px]">
-                    {item.brand_name || 'Generic / Unresolved'}
-                  </td>
-
-                  {/* Synthesized Short Desc */}
-                  <td className="py-2.5 px-3.5 font-sans text-[#E7EAF0] text-xs max-w-[380px] truncate">
-                    {item.short_desc || item.product_name}
-                  </td>
-
-                  {/* Taxonomy */}
-                  <td className="py-2.5 px-3.5 font-mono text-[11px] text-[#8B93A3] truncate max-w-[140px]">
-                    <div className="text-white font-semibold">{item.dept}</div>
-                    <div className="text-[10px] text-[#525B6C] truncate">{item.classpath.split(' > ').pop()}</div>
-                  </td>
-
-                  {/* Confidence Score with Segmented Gauge */}
-                  <td className="py-2.5 px-3.5 whitespace-nowrap">
-                    <SegmentedGauge score={item.confidence_score} size="sm" />
-                  </td>
-
-                  {/* Status Chip */}
-                  <td className="py-2.5 px-3.5 whitespace-nowrap">
-                    {getStatusChip(item.status)}
-                  </td>
-
-                  {/* Action */}
-                  <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end space-x-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onInspectProduct(item.id);
-                        }}
-                        className="p-1 text-[#8B93A3] hover:text-[#45E0D6] rounded hover:bg-[#0B0E13] transition-colors"
-                        title="Inspect 252-Column Record"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditProduct(item.id);
-                        }}
-                        className="p-1 text-[#8B93A3] hover:text-[#E8A33D] rounded hover:bg-[#0B0E13] transition-colors"
-                        title="Review / Edit Record"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                  <td>{renderMiniGauge(item.confidence_score)}</td>
+                  <td>{renderStatusChip(item.status)}</td>
+                  <td className="text-right">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onInspectProduct(item.id);
+                      }}
+                      className="text-[11px] font-mono text-[var(--cyan)] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>inspect</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </button>
                   </td>
                 </tr>
               ))
@@ -299,28 +230,28 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
         </table>
       </div>
 
-      {/* Pagination Footer */}
-      <div className="p-3 border-t border-[#232935] bg-[#12161D] flex items-center justify-between text-xs text-[#8B93A3] font-mono">
+      {/* Pagination Bar */}
+      <div className="flex items-center justify-between p-[12px_18px] border-t border-[var(--border)] font-mono text-xs text-[var(--text-muted)]">
         <div>
-          Showing <span className="text-white font-bold">{products.length}</span> of{' '}
-          <span className="text-white font-bold">{totalCount}</span> SKUs
+          Showing <span className="text-[var(--text-primary)]">{products.length}</span> of{' '}
+          <span className="text-[var(--text-primary)]">{totalCount}</span> SKUs
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page <= 1}
-            className="p-1.5 rounded-lg bg-[#0B0E13] border border-[#232935] text-[#8B93A3] hover:text-white disabled:opacity-30 transition-colors"
+            className="p-1 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white disabled:opacity-30 cursor-pointer"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
           <span>
-            PAGE <strong className="text-white">{page}</strong> / {totalPages}
+            {page} / {totalPages}
           </span>
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page >= totalPages}
-            className="p-1.5 rounded-lg bg-[#0B0E13] border border-[#232935] text-[#8B93A3] hover:text-white disabled:opacity-30 transition-colors"
+            className="p-1 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white disabled:opacity-30 cursor-pointer"
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>

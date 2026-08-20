@@ -1,22 +1,7 @@
 import React, { useState } from 'react';
-import {
-  ShieldCheck,
-  Lock,
-  Mail,
-  User as UserIcon,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  Database,
-  CheckCircle2,
-  Cpu,
-  Layers,
-  ArrowDownRight,
-  Terminal
-} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from './Toast';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login, register, isLoading } = useAuth();
@@ -47,133 +32,87 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const pipelineStages = [
-    { num: '01', title: 'Ingestion & Placeholder Sanitizer', desc: 'Strips null flags, isolates vendor tokens & MPN' },
-    { num: '02', title: 'Canonical Entity & Brand Resolver', desc: 'Maps codes to legal mfrs & trademarked brands (®, ™)' },
-    { num: '03', title: 'Taxonomy & UNSPSC Classification', desc: 'Assigns 3-level Classpath & 8-digit UNSPSC code' },
-    { num: '04', title: 'Attribute Extraction & LOV Engine', desc: '50-slot spec extraction with strict LOV validation' },
-    { num: '05', title: 'UOM & Fraction Standardization', desc: 'Decimal to 64th fractions & standard unit spacing' },
-    { num: '06', title: '5-Tier Description Synthesis', desc: 'Invoice (<=40 CAPS), Mobile (60-80), Short, Long, Web' },
-    { num: '07', title: '252-Column Delivery Mapping', desc: 'Syndication to Unilog standard CSV/Excel layout' },
-  ];
-
   return (
-    <div className="min-h-screen w-full bg-[#0B0E13] text-[#E7EAF0] flex flex-col lg:flex-row font-sans selection:bg-[#45E0D6] selection:text-[#0B0E13]">
-      
-      {/* LEFT PANEL: 7-Stage Pipeline Blueprint & Value Demonstration */}
-      <div className="lg:w-[56%] bg-[#0B0E13] border-b lg:border-b-0 lg:border-r border-[#232935] p-6 sm:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden">
-        {/* Subtle Ambient Radial Accents */}
-        <div className="absolute top-0 left-0 w-96 h-96 bg-[#45E0D6]/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#3B82F6]/5 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Brand Header */}
-        <div className="relative z-10">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-[#12161D] border border-[#232935] flex items-center justify-center shadow-[0_0_20px_rgba(69,224,214,0.15)]">
-              <Database className="w-5 h-5 text-[#45E0D6]" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-base font-extrabold tracking-wider text-white font-mono">UNILOG</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#45E0D6]/10 text-[#45E0D6] font-mono font-bold border border-[#45E0D6]/20">
-                  CIMPLIFI™ PIM
-                </span>
-              </div>
-              <p className="text-xs text-[#8B93A3]">
-                Industrial Product Intelligence & Master Data Enrichment
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 7-Stage Pipeline Lit Sequence */}
-        <div className="my-8 relative z-10 space-y-4">
-          <div className="flex items-center justify-between border-b border-[#232935] pb-2">
-            <h3 className="text-xs font-mono font-bold text-[#8B93A3] uppercase tracking-wider flex items-center space-x-2">
-              <Cpu className="w-3.5 h-3.5 text-[#45E0D6]" />
-              <span>DETERMINISTIC 7-STAGE ENRICHMENT PIPELINE</span>
-            </h3>
-            <span className="text-[10px] font-mono text-[#3DDC84] font-bold">100% LOV COMPLIANT</span>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2">
-            {pipelineStages.map((stage) => (
-              <div
-                key={stage.num}
-                className="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl bg-[#12161D] border border-[#232935] hover:border-[#45E0D6]/40 transition-colors group"
-              >
-                <span className="font-mono text-xs font-bold text-[#45E0D6] group-hover:text-white transition-colors">
-                  {stage.num}
-                </span>
-                <div className="w-1.5 h-1.5 rounded-full bg-[#3DDC84]" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-[#E7EAF0] truncate font-sans">
-                    {stage.title}
-                  </div>
-                  <div className="text-[11px] text-[#8B93A3] truncate font-sans">
-                    {stage.desc}
-                  </div>
+    <div className="min-h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] font-sans selection:bg-[var(--cyan)] selection:text-[var(--bg)] flex flex-col justify-center">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] min-h-screen border-b lg:border-b-0">
+        
+        {/* Left Side: Pipeline preview & sample */}
+        <div className="p-8 sm:p-12 lg:p-14 bg-[radial-gradient(circle_at_15%_20%,rgba(69,224,214,0.06),transparent_45%)] bg-[var(--bg)] flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-[var(--border)]">
+          <div>
+            {/* Brand Mark */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-2.5 h-2.5 rounded-[2px] bg-[var(--cyan)]" />
+              <div>
+                <div className="font-mono text-sm tracking-[0.06em] text-[var(--text-primary)] font-medium">
+                  UNIHACK PIM
+                </div>
+                <div className="text-xs text-[var(--text-muted)] tracking-[0.03em] mt-0.5">
+                  Industrial product intelligence &amp; enrichment
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Real Transformation Before/After Card */}
-        <div className="relative z-10 p-4 rounded-xl bg-[#12161D] border border-[#232935] font-mono text-xs">
-          <div className="flex items-center justify-between text-[11px] text-[#8B93A3] mb-2 font-mono">
-            <span className="flex items-center space-x-1">
-              <Terminal className="w-3 h-3 text-[#E8A33D]" />
-              <span>LIVE TRANSFORM PREVIEW</span>
-            </span>
-            <span className="text-[#3DDC84]">11.4ms LATENCY</span>
-          </div>
-          <div className="space-y-1.5 text-[11px]">
-            <div className="flex items-start space-x-2">
-              <span className="text-[#EF5A5A] font-bold flex-shrink-0">RAW IN:</span>
-              <span className="text-[#8B93A3] truncate">PDSH4816AF Dishwasher SS -- Unbranded -- APPDE</span>
             </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-[#3DDC84] font-bold flex-shrink-0">ENRICHED:</span>
-              <span className="text-[#E7EAF0] truncate">Frigidaire® Gallery 24 in Built-In Dishwasher 49 dBA SST 120V</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* RIGHT PANEL: Interactive Authentication Card */}
-      <div className="lg:w-[44%] bg-[#0B0E13] flex items-center justify-center p-6 sm:p-10 lg:p-12 relative">
-        <div className="w-full max-w-md">
-          {/* Glass Card: The One Place Using Glass Treatment */}
-          <div className="bg-[#12161D]/90 backdrop-blur-xl border border-[#232935] rounded-2xl p-6 sm:p-8 shadow-glass-card relative">
-            
-            {/* Header */}
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1A1F29] border border-[#232935] mb-3 text-[#45E0D6]">
-                <Lock className="w-5 h-5" />
+            {/* 7-Stage Enrichment Pipeline */}
+            <div className="my-10">
+              <div className="text-[11px] text-[var(--text-muted)] uppercase tracking-[0.08em] mb-4 font-mono">
+                7-stage enrichment pipeline
               </div>
-              <h2 className="text-lg font-bold text-white tracking-tight font-sans">
-                {mode === 'login' ? 'Enterprise Gateway Sign In' : 'Create PIM Access Profile'}
-              </h2>
-              <p className="text-xs text-[#8B93A3] mt-1 font-sans">
-                {mode === 'login'
-                  ? 'Enter corporate credentials to access catalog & review queue'
-                  : 'Register a new profile to curate and validate industrial data'}
-              </p>
+              <div className="pipeline-row">
+                <div className="pl-stage lit"><div className="pl-node" /></div>
+                <div className="pl-stage lit"><div className="pl-node" /></div>
+                <div className="pl-stage lit"><div className="pl-node" /></div>
+                <div className="pl-stage lit"><div className="pl-node" /></div>
+                <div className="pl-stage lit"><div className="pl-node" /></div>
+                <div className="pl-stage lit"><div className="pl-node" /></div>
+                <div className="pl-stage lit"><div className="pl-node" /></div>
+              </div>
+              <div className="pl-labels">
+                <span>sanitize</span>
+                <span>resolve</span>
+                <span>taxonomy</span>
+                <span>extract</span>
+                <span>uom</span>
+                <span>describe</span>
+                <span>deliver</span>
+              </div>
             </div>
 
-            {/* Mode Selector */}
-            <div className="flex rounded-xl bg-[#0B0E13] p-1 mb-6 border border-[#232935] font-mono text-xs">
+            {/* Sample Record Preview */}
+            <div className="sample-record">
+              <div className="raw">"APPDE DW-5SST -- Unbranded -- 50.25in 120v"</div>
+              <div className="sample-arrow">↓ resolved, extracted, normalized</div>
+              <div className="clean">DISHWASHER LEG 5 SST 120V 15A 50-1/4IN</div>
+            </div>
+          </div>
+
+          <div className="text-xs text-[var(--text-muted)] mt-8">
+            252-column delivery schema · UNSPSC classification · zero hallucinated attributes
+          </div>
+        </div>
+
+        {/* Right Side: Auth Card */}
+        <div className="flex items-center justify-center p-6 sm:p-10 lg:p-12 bg-[var(--bg)]">
+          <div className="w-full max-w-[380px] bg-[var(--surface-glass)] backdrop-blur-[14px] border border-[var(--border-strong)] rounded-xl p-8 shadow-2xl">
+            
+            <h1 className="text-xl font-semibold mb-1 text-[var(--text-primary)]">
+              {mode === 'login' ? 'Sign in' : 'Create Account'}
+            </h1>
+            <p className="text-[13px] text-[var(--text-secondary)] mb-6">
+              {mode === 'login' ? 'Access the catalog workbench' : 'Register a new data specialist profile'}
+            </p>
+
+            {/* Switcher Tab */}
+            <div className="flex rounded-md bg-[var(--surface-1)] p-1 mb-5 border border-[var(--border-strong)] font-mono text-xs">
               <button
                 type="button"
                 onClick={() => {
                   setMode('login');
                   setErrorMessage(null);
                 }}
-                className={`flex-1 py-2 rounded-lg font-bold transition-all ${
+                className={`flex-1 py-1.5 rounded transition-all ${
                   mode === 'login'
-                    ? 'bg-[#1A1F29] text-[#45E0D6] border border-[#232935] shadow-sm'
-                    : 'text-[#8B93A3] hover:text-white'
+                    ? 'bg-[var(--cyan)] text-[#06201D] font-semibold'
+                    : 'text-[var(--text-secondary)] hover:text-white'
                 }`}
               >
                 SIGN IN
@@ -184,10 +123,10 @@ export const LoginPage: React.FC = () => {
                   setMode('register');
                   setErrorMessage(null);
                 }}
-                className={`flex-1 py-2 rounded-lg font-bold transition-all ${
+                className={`flex-1 py-1.5 rounded transition-all ${
                   mode === 'register'
-                    ? 'bg-[#1A1F29] text-[#45E0D6] border border-[#232935] shadow-sm'
-                    : 'text-[#8B93A3] hover:text-white'
+                    ? 'bg-[var(--cyan)] text-[#06201D] font-semibold'
+                    : 'text-[var(--text-secondary)] hover:text-white'
                 }`}
               >
                 REGISTER
@@ -196,68 +135,54 @@ export const LoginPage: React.FC = () => {
 
             {/* Error Message */}
             {errorMessage && (
-              <div className="mb-4 p-3 bg-[#EF5A5A]/10 border border-[#EF5A5A]/30 rounded-xl text-[#EF5A5A] text-xs flex items-center space-x-2 font-mono">
+              <div className="mb-4 p-2.5 bg-[var(--red-bg)] border border-[var(--red)] rounded-md text-[var(--red)] text-xs flex items-center gap-2 font-mono">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
                 <div>
-                  <label className="block text-[10px] font-mono uppercase font-bold text-[#8B93A3] mb-1">
-                    FULL NAME
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="w-4 h-4 text-[#8B93A3] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Alex Mercer"
-                      className="w-full pl-10 pr-3.5 py-2.5 bg-[#0B0E13] border border-[#232935] rounded-xl text-xs text-white placeholder-[#525B6C] focus:border-[#45E0D6] focus:outline-none transition-colors"
-                    />
-                  </div>
+                  <label className="block text-xs text-[var(--text-secondary)] mb-1.5">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Abhishek Vishwakarma"
+                    className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md px-3 py-2.5 text-[13px] text-[var(--text-primary)] focus:outline-none focus:border-[var(--cyan)]"
+                  />
                 </div>
               )}
 
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold text-[#8B93A3] mb-1">
-                  CORPORATE EMAIL
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-[#8B93A3] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@unilog.com"
-                    className="w-full pl-10 pr-3.5 py-2.5 bg-[#0B0E13] border border-[#232935] rounded-xl text-xs text-white placeholder-[#525B6C] focus:border-[#45E0D6] focus:outline-none transition-colors font-mono"
-                  />
-                </div>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1.5">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@distributor.com"
+                  className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md px-3 py-2.5 text-[13px] text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--cyan)]"
+                />
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold text-[#8B93A3] mb-1">
-                  PASSWORD
-                </label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1.5">Password</label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-[#8B93A3] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 bg-[#0B0E13] border border-[#232935] rounded-xl text-xs text-white placeholder-[#525B6C] focus:border-[#45E0D6] focus:outline-none transition-colors font-mono"
+                    className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md px-3 pr-9 py-2.5 text-[13px] text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--cyan)]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8B93A3] hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-white"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -266,46 +191,44 @@ export const LoginPage: React.FC = () => {
 
               {mode === 'register' && (
                 <div>
-                  <label className="block text-[10px] font-mono uppercase font-bold text-[#8B93A3] mb-1">
-                    ROLE & PERMISSIONS
-                  </label>
+                  <label className="block text-xs text-[var(--text-secondary)] mb-1.5">Role</label>
                   <select
                     value={role}
                     onChange={(e: any) => setRole(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#0B0E13] border border-[#232935] rounded-xl text-xs text-[#E7EAF0] focus:border-[#45E0D6] focus:outline-none font-mono"
+                    className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md px-3 py-2.5 text-[13px] text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--cyan)]"
                   >
-                    <option value="specialist">Catalog Specialist (Edit, Sandbox, Approve)</option>
-                    <option value="reviewer">Data Reviewer (HITL Triage & Approvals)</option>
-                    <option value="admin">Platform Administrator (Full Control)</option>
-                    <option value="viewer">Auditor / Viewer (Read-Only 252-Col Inspection)</option>
+                    <option value="specialist">Specialist (Curate, Sandbox, Approve)</option>
+                    <option value="reviewer">Reviewer (Triage & Approvals)</option>
+                    <option value="admin">Administrator (Full Access)</option>
+                    <option value="viewer">Viewer (Read-Only 252-Col Inspection)</option>
                   </select>
                 </div>
               )}
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center space-x-2 py-2.5 bg-[#45E0D6] hover:bg-[#34cbbf] text-[#0B0E13] rounded-xl text-xs font-bold font-mono transition-all disabled:opacity-50 hover:scale-[1.01] shadow-[0_0_16px_rgba(69,224,214,0.3)]"
-                >
-                  <span>{isLoading ? 'VERIFYING...' : mode === 'login' ? 'SIGN IN TO WORKBENCH' : 'CREATE ACCOUNT & SIGN IN'}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-[var(--cyan)] text-[#06201D] font-semibold text-[13px] rounded-md py-2.5 mt-2 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+              >
+                {isLoading ? 'Verifying...' : mode === 'login' ? 'Sign in' : 'Create account'}
+              </button>
             </form>
 
-            {/* Bottom Security Note */}
-            <div className="mt-6 pt-4 border-t border-[#232935] text-center">
-              <p className="text-[10px] text-[#8B93A3] font-mono flex items-center justify-center space-x-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#3DDC84]" />
-                <span>OWASP PBKDF2 & RFC 7519 JWT ENCRYPTION</span>
-              </p>
+            <div className="flex justify-between items-center mt-4 text-xs text-[var(--text-muted)]">
+              <span>Forgot password?</span>
+              <a href="#" onClick={(e) => { e.preventDefault(); setMode(mode === 'login' ? 'register' : 'login'); }} className="text-[var(--cyan)] no-underline">
+                {mode === 'login' ? 'Request access' : 'Existing account? Sign in'}
+              </a>
+            </div>
+
+            <div className="mt-6 pt-5 border-t border-[var(--border)] text-[11px] text-[var(--text-muted)]">
+              Roles: admin · specialist · reviewer · viewer — access is enforced server-side, not just hidden in this screen.
             </div>
 
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
   );
 };
