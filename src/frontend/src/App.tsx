@@ -85,26 +85,35 @@ const DashboardContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-pim-darkest text-slate-100 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans">
-      {/* PIM Workbench Control Header */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        stats={stats}
-        reviewCount={reviewCount}
-        onQuickExport={handleQuickExport}
-      />
+    <div className="min-h-screen bg-[#080C14] text-slate-100 flex flex-col antialiased selection:bg-cyan-500 selection:text-white font-sans relative overflow-x-hidden">
+      {/* Background Ambient Radial Light Cones */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-blue-600/10 blur-[140px] rounded-full" />
+        <div className="absolute top-1/3 right-10 w-[500px] h-[450px] bg-indigo-600/10 blur-[160px] rounded-full" />
+        <div className="absolute bottom-10 left-1/3 w-[700px] h-[350px] bg-cyan-600/10 blur-[180px] rounded-full" />
+      </div>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6 py-4 space-y-4">
-        {/* Master Data Quality & Compliance Strip */}
+      {/* Modern Frosted Header */}
+      <div className="relative z-10">
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          stats={stats}
+          reviewCount={reviewCount}
+          onQuickExport={handleQuickExport}
+        />
+      </div>
+
+      {/* Main Content Workspace */}
+      <main className="relative z-10 flex-1 max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6 py-5 space-y-5">
+        {/* KPI Metrics Streamer */}
         <MetricsBanner
           stats={stats}
           onFilterStatus={handleFilterStatusFromBanner}
         />
 
         {/* Tab Views */}
-        <div className="transition-opacity duration-150">
+        <div className="transition-opacity duration-200">
           {activeTab === 'catalog' && (
             <CatalogExplorer
               onInspectProduct={handleInspect}
@@ -144,23 +153,23 @@ const DashboardContent: React.FC = () => {
         />
       )}
 
-      {/* Industrial PIM Workbench Footer */}
-      <footer className="bg-pim-darkest border-t border-pim-border py-3 text-xs text-pim-textMuted font-mono">
-        <div className="max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+      {/* Modern Enterprise Footer */}
+      <footer className="relative z-10 bg-[#070A11]/90 backdrop-blur-md border-t border-white/[0.06] py-3.5 text-xs text-slate-400 font-mono">
+        <div className="max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center space-x-2">
-            <span className="font-bold text-slate-300">UNILOG CIMPLIFI™ PIM SUITE</span>
+            <span className="font-extrabold text-white">UNILOG CIMPLIFI™ PIM PLATFORM</span>
             <span className="text-slate-700">|</span>
-            <span>252-COLUMN MASTER DELIVERY SCHEMA</span>
+            <span className="text-slate-300">252-COLUMN MASTER DELIVERY STANDARD</span>
             <span className="text-slate-700">|</span>
-            <span>0% HALLUCINATION GUARANTEE</span>
+            <span className="text-emerald-400 font-bold">0% HALLUCINATION GUARANTEE</span>
           </div>
-          <div className="flex items-center space-x-3 text-pim-textMuted text-[11px]">
+          <div className="flex items-center space-x-3 text-slate-400 text-[11px]">
             <span className="flex items-center space-x-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-              <span className="text-slate-300">CORE ENGINE: FASTAPI :8000</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
+              <span className="text-slate-200 font-semibold">ENGINE: FASTAPI :8000</span>
             </span>
             <span className="text-slate-700">|</span>
-            <span>SUB-12MS INGESTION</span>
+            <span className="text-cyan-300 font-bold">SUB-12MS THROUGHPUT</span>
           </div>
         </div>
       </footer>

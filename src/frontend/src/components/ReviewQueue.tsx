@@ -9,7 +9,9 @@ import {
   Plus,
   Trash2,
   Save,
-  X
+  X,
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { ReviewItem, ProductDetail, AttributeTriple } from '../types';
 import { fetchReviewQueue, approveProduct, fetchProductDetail, updateProduct } from '../services/api';
@@ -126,21 +128,21 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
   return (
     <div className="space-y-4">
       {/* Header Summary */}
-      <div className="bg-pim-panel border border-pim-border rounded p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm font-mono">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded bg-amber-950 border border-amber-800/50 flex items-center justify-center">
-            <ShieldAlert className="w-4 h-4 text-amber-400" />
+      <div className="glass-panel p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-amber-500/20 shadow-glass font-mono">
+        <div className="flex items-center space-x-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-glow-amber">
+            <ShieldAlert className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h2 className="text-xs font-bold text-white uppercase tracking-wider">
+              <h2 className="text-xs font-extrabold text-white uppercase tracking-wider">
                 DATA QUALITY EXCEPTION BOARD (HITL TRIAGE)
               </h2>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-400 border border-amber-800/50">
+              <span className="glow-badge-amber text-[10px] px-2 py-0.5 rounded-full font-bold">
                 {items.length} ANOMALIES FLAGGED
               </span>
             </div>
-            <p className="text-[11px] text-pim-textMuted font-sans mt-0.5">
+            <p className="text-[11px] text-slate-400 font-sans mt-0.5">
               Low-confidence records (&lt;0.85) requiring catalog specialist sign-off before delivery packaging
             </p>
           </div>
@@ -148,7 +150,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
 
         <button
           onClick={loadQueue}
-          className="flex items-center space-x-1.5 px-3 py-1.5 bg-pim-surface hover:bg-slate-800 text-slate-300 rounded text-xs font-medium border border-pim-border transition-colors font-mono"
+          className="flex items-center space-x-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-bold border border-white/[0.08] transition-all font-mono hover:scale-105"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>SYNC QUEUE</span>
@@ -157,43 +159,41 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
 
       {/* Triage Cards Grid */}
       {loading ? (
-        <div className="py-20 text-center text-pim-textMuted space-y-2 font-mono">
-          <RefreshCw className="w-5 h-5 animate-spin text-blue-500 mx-auto" />
+        <div className="py-24 text-center text-slate-400 space-y-3 font-mono">
+          <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto shadow-glow-amber" />
           <p className="text-xs">RETRIEVING EXCEPTION QUEUE...</p>
         </div>
       ) : items.length === 0 ? (
-        <div className="bg-pim-panel border border-pim-border rounded p-12 text-center space-y-2 shadow-sm font-mono">
-          <div className="w-10 h-10 rounded bg-emerald-950 border border-emerald-800/50 flex items-center justify-center mx-auto text-emerald-400">
-            <CheckCircle2 className="w-5 h-5" />
+        <div className="glass-panel p-12 rounded-2xl text-center space-y-3 shadow-glass font-mono border border-emerald-500/20">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto text-white shadow-glow-emerald">
+            <CheckCircle2 className="w-6 h-6" />
           </div>
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider">ALL CATALOG RECORDS 100% VALIDATED</h3>
-          <p className="text-[11px] text-pim-textMuted font-sans max-w-md mx-auto">
+          <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">ALL CATALOG RECORDS 100% VALIDATED</h3>
+          <p className="text-xs text-slate-400 font-sans max-w-md mx-auto">
             Zero records currently triggered anomaly flags or confidence scores under 0.85. 100% of items meet delivery criteria.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 font-mono">
           {items.map((item) => (
             <div
               key={item.id}
-              className="bg-pim-panel border border-pim-border hover:border-amber-500/50 rounded p-3.5 space-y-2.5 transition-colors shadow-sm"
+              className="glass-card rounded-2xl p-4.5 space-y-3 transition-all border border-white/[0.08] hover:border-amber-500/40 hover:shadow-glow-amber"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-white text-xs">{item.mfg_part_num}</span>
-                    <span className="text-[10px] text-pim-textMuted font-mono">ROW #{item.row_id}</span>
+                    <span className="font-extrabold text-white text-xs">{item.mfg_part_num}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">ROW #{item.row_id}</span>
                   </div>
-                  <div className="text-xs text-blue-400 font-semibold mt-0.5">
+                  <div className="text-xs text-cyan-300 font-bold mt-0.5 font-sans">
                     {item.brand_name} · <span className="text-slate-300 font-normal">{item.manufacturer_name}</span>
                   </div>
                 </div>
 
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                    item.confidence_score >= 0.85
-                      ? 'bg-blue-950 text-blue-400 border-blue-800/50'
-                      : 'bg-amber-950 text-amber-400 border-amber-800/50'
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    item.confidence_score >= 0.85 ? 'glow-badge-cyan' : 'glow-badge-amber'
                   }`}
                 >
                   {(item.confidence_score * 100).toFixed(0)}% CONF
@@ -201,24 +201,24 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
               </div>
 
               {/* Raw Input vs Generated Invoice */}
-              <div className="space-y-1 text-xs">
-                <div className="p-2 bg-pim-surface rounded border border-pim-border text-slate-400 text-[10px] line-clamp-2">
-                  <span className="text-pim-textMuted block text-[9px] uppercase font-bold">SOURCE FEED:</span>
+              <div className="space-y-1.5 text-xs">
+                <div className="p-2.5 bg-slate-950/80 rounded-xl border border-white/[0.06] text-slate-400 text-[10px] line-clamp-2">
+                  <span className="text-slate-500 block text-[9px] uppercase font-bold">SOURCE FEED:</span>
                   {item.raw_part_desc}
                 </div>
-                <div className="p-2 bg-pim-surface rounded border border-pim-border text-emerald-300 text-[10px]">
-                  <span className="text-pim-textMuted block text-[9px] uppercase font-bold">SYNTHESIZED INVOICE:</span>
+                <div className="p-2.5 bg-slate-950/80 rounded-xl border border-white/[0.06] text-emerald-300 text-[10px]">
+                  <span className="text-slate-500 block text-[9px] uppercase font-bold">SYNTHESIZED INVOICE:</span>
                   {item.invoice_desc}
                 </div>
               </div>
 
               {/* Anomaly Badges */}
               {item.anomaly_flags.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
+                <div className="flex flex-wrap gap-1.5 pt-1">
                   {item.anomaly_flags.map((flag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-0.5 text-[9px] bg-amber-950 text-amber-400 border border-amber-800/50 rounded flex items-center space-x-1"
+                      className="px-2 py-0.5 text-[9px] glow-badge-amber rounded-full flex items-center space-x-1"
                     >
                       <AlertTriangle className="w-2.5 h-2.5" />
                       <span>{flag}</span>
@@ -228,23 +228,23 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end space-x-1.5 pt-2 border-t border-pim-border">
+              <div className="flex items-center justify-end space-x-2 pt-2.5 border-t border-white/[0.06]">
                 <button
                   onClick={() => onInspectProduct(item.id)}
-                  className="px-2.5 py-1 bg-pim-surface hover:bg-slate-800 text-slate-300 rounded text-[11px] font-mono border border-pim-border transition-colors"
+                  className="px-3 py-1.5 bg-slate-950 hover:bg-slate-900 text-slate-300 rounded-xl text-[11px] font-mono border border-white/[0.08] transition-colors"
                 >
                   DUAL-PANE DIFF
                 </button>
                 <button
                   onClick={() => openEditor(item.id)}
-                  className="flex items-center space-x-1 px-3 py-1 bg-blue-900/80 hover:bg-blue-800 text-blue-200 rounded text-[11px] font-mono border border-blue-700/50 transition-colors"
+                  className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-cyan-300 rounded-xl text-[11px] font-mono border border-cyan-500/40 transition-colors"
                 >
                   <Edit3 className="w-3 h-3" />
                   <span>EDIT</span>
                 </button>
                 <button
                   onClick={() => handleQuickApprove(item.id)}
-                  className="flex items-center space-x-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[11px] font-mono font-bold transition-colors shadow-sm"
+                  className="flex items-center space-x-1.5 px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-[11px] font-mono font-bold shadow-glow-emerald transition-all hover:scale-105"
                 >
                   <CheckCircle2 className="w-3 h-3" />
                   <span>APPROVE</span>
@@ -257,46 +257,46 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
 
       {/* Inline Editor Modal */}
       {editingId && editProduct && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 flex items-center justify-center p-4">
-          <div className="bg-pim-panel border border-pim-border rounded w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden font-sans">
-            <div className="px-5 py-3.5 border-b border-pim-border bg-pim-darkest flex items-center justify-between font-mono">
-              <div className="flex items-center space-x-2">
-                <Edit3 className="w-4 h-4 text-blue-400" />
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel border border-white/[0.12] rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden font-sans">
+            <div className="px-6 py-4 border-b border-white/[0.08] bg-gradient-to-r from-[#0B101D] via-[#0F1626] to-[#0B101D] flex items-center justify-between font-mono">
+              <div className="flex items-center space-x-2.5">
+                <Edit3 className="w-4 h-4 text-cyan-400" />
                 <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                   CORRECT & VALIDATE MASTER RECORD (MPN: {editProduct.mfg_part_number})
                 </h3>
               </div>
               <button
                 onClick={() => setEditingId(null)}
-                className="text-pim-textMuted hover:text-white p-1 rounded"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/[0.08]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-3.5 text-xs">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
               {/* Brand & Manufacturer Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-pim-textMuted font-mono text-[10px] uppercase font-semibold mb-1">
+                  <label className="block text-slate-400 font-mono text-[10px] uppercase font-bold mb-1">
                     CANONICAL BRAND NAME (WITH ®, ™)
                   </label>
                   <input
                     type="text"
                     value={editBrand}
                     onChange={(e) => setEditBrand(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-pim-surface border border-pim-border rounded text-white font-semibold focus:border-pim-accent font-sans"
+                    className="w-full px-3 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl text-white font-semibold focus:border-cyan-400 font-sans"
                   />
                 </div>
                 <div>
-                  <label className="block text-pim-textMuted font-mono text-[10px] uppercase font-semibold mb-1">
+                  <label className="block text-slate-400 font-mono text-[10px] uppercase font-bold mb-1">
                     MANUFACTURER CORPORATE ENTITY
                   </label>
                   <input
                     type="text"
                     value={editManuf}
                     onChange={(e) => setEditManuf(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-pim-surface border border-pim-border rounded text-white focus:border-pim-accent font-sans"
+                    className="w-full px-3 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl text-white focus:border-cyan-400 font-sans"
                   />
                 </div>
               </div>
@@ -308,10 +308,8 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
                     INVOICE_DESC (MUST BE ≤ 40 CHARS & ALL CAPS)
                   </label>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded ${
-                      editInvoiceDesc.length <= 40
-                        ? 'text-emerald-400 bg-emerald-950 border border-emerald-800/50'
-                        : 'text-rose-400 bg-rose-950 border border-rose-800/50'
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                      editInvoiceDesc.length <= 40 ? 'glow-badge-emerald' : 'glow-badge-amber'
                     }`}
                   >
                     {editInvoiceDesc.length}/40 chars
@@ -322,7 +320,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
                   maxLength={40}
                   value={editInvoiceDesc}
                   onChange={(e) => setEditInvoiceDesc(e.target.value.toUpperCase())}
-                  className="w-full px-2.5 py-1.5 bg-pim-surface border border-pim-border rounded font-mono text-emerald-300 font-bold focus:border-pim-accent"
+                  className="w-full px-3 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl font-mono text-emerald-300 font-bold focus:border-cyan-400"
                 />
               </div>
 
@@ -333,10 +331,10 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
                     MOBILE_DESC (60–80 CHARS SPEC RANGE)
                   </label>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded ${
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                       editMobileDesc.length >= 60 && editMobileDesc.length <= 80
-                        ? 'text-blue-400 bg-blue-950 border border-blue-800/50'
-                        : 'text-amber-400 bg-amber-950 border border-amber-800/50'
+                        ? 'glow-badge-cyan'
+                        : 'glow-badge-amber'
                     }`}
                   >
                     {editMobileDesc.length}/80 chars
@@ -346,7 +344,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
                   type="text"
                   value={editMobileDesc}
                   onChange={(e) => setEditMobileDesc(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-pim-surface border border-pim-border rounded text-white focus:border-pim-accent font-sans"
+                  className="w-full px-3 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl text-white focus:border-cyan-400 font-sans"
                 />
               </div>
 
@@ -359,7 +357,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
                   type="text"
                   value={editShortDesc}
                   onChange={(e) => setEditShortDesc(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-pim-surface border border-pim-border rounded text-white focus:border-pim-accent font-sans"
+                  className="w-full px-3 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl text-white focus:border-cyan-400 font-sans"
                 />
               </div>
 
@@ -372,26 +370,26 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
                   rows={2}
                   value={editLongDesc}
                   onChange={(e) => setEditLongDesc(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-pim-surface border border-pim-border rounded text-slate-200 focus:border-pim-accent font-sans"
+                  className="w-full px-3 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl text-slate-200 focus:border-cyan-400 font-sans"
                 />
               </div>
 
               {/* Dynamic Triplet Attributes */}
-              <div className="pt-2 border-t border-pim-border space-y-2">
+              <div className="pt-3 border-t border-white/[0.06] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-bold text-white text-[10px] uppercase">
                     50 TECHNICAL TRIPLET ATTRIBUTES (LABEL · VALUE · UOM)
                   </span>
                   <button
                     onClick={addAttributeSlot}
-                    className="flex items-center space-x-1 px-2 py-0.5 bg-pim-surface hover:bg-slate-800 text-blue-400 rounded text-[11px] font-mono border border-pim-border"
+                    className="flex items-center space-x-1.5 px-3 py-1 bg-slate-900 hover:bg-slate-800 text-cyan-300 rounded-lg text-xs font-mono border border-cyan-500/30"
                   >
                     <Plus className="w-3 h-3" />
                     <span>ADD ATTRIBUTE SLOT</span>
                   </button>
                 </div>
 
-                <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1 font-mono">
+                <div className="space-y-2 max-h-44 overflow-y-auto pr-1 font-mono">
                   {editAttributes.map((attr, idx) => (
                     <div key={idx} className="flex items-center space-x-2">
                       <input
@@ -399,25 +397,25 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
                         placeholder="Label"
                         value={attr.label}
                         onChange={(e) => updateAttributeSlot(idx, 'label', e.target.value)}
-                        className="flex-1 px-2 py-1 bg-pim-surface border border-pim-border rounded text-xs text-white"
+                        className="flex-1 px-3 py-1.5 bg-slate-950/80 border border-white/[0.08] rounded-lg text-xs text-white focus:border-cyan-400"
                       />
                       <input
                         type="text"
                         placeholder="Value"
                         value={attr.value}
                         onChange={(e) => updateAttributeSlot(idx, 'value', e.target.value)}
-                        className="flex-1 px-2 py-1 bg-pim-surface border border-pim-border rounded text-xs text-white"
+                        className="flex-1 px-3 py-1.5 bg-slate-950/80 border border-white/[0.08] rounded-lg text-xs text-white focus:border-cyan-400"
                       />
                       <input
                         type="text"
                         placeholder="UOM"
                         value={attr.uom || ''}
                         onChange={(e) => updateAttributeSlot(idx, 'uom', e.target.value)}
-                        className="w-20 px-2 py-1 bg-pim-surface border border-pim-border rounded text-xs text-blue-400"
+                        className="w-24 px-3 py-1.5 bg-slate-950/80 border border-white/[0.08] rounded-lg text-xs text-cyan-300 focus:border-cyan-400"
                       />
                       <button
                         onClick={() => removeAttributeSlot(idx)}
-                        className="p-1 text-pim-textMuted hover:text-rose-400 rounded hover:bg-pim-surface"
+                        className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-white/[0.08]"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -428,17 +426,17 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
             </div>
 
             {/* Footer Actions */}
-            <div className="px-5 py-3 border-t border-pim-border bg-pim-darkest flex items-center justify-end space-x-2 font-mono">
+            <div className="px-6 py-4 border-t border-white/[0.08] bg-[#090D17] flex items-center justify-end space-x-3 font-mono">
               <button
                 onClick={() => setEditingId(null)}
-                className="px-3.5 py-1.5 bg-pim-surface hover:bg-slate-800 text-slate-300 rounded text-xs font-medium border border-pim-border"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold border border-white/[0.08]"
               >
                 CANCEL
               </button>
               <button
                 onClick={handleSaveEdit}
                 disabled={saving}
-                className="flex items-center space-x-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold transition-colors disabled:opacity-50"
+                className="flex items-center space-x-2 px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-glow-emerald transition-all disabled:opacity-50"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>{saving ? 'SAVING...' : 'SAVE & APPROVE FOR PRODUCTION'}</span>

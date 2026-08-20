@@ -1,129 +1,137 @@
 import React from 'react';
 import {
-  Database,
+  Layers,
+  FileCheck2,
+  Smartphone,
+  ShieldCheck,
+  AlertOctagon,
+  Percent,
   CheckCircle2,
-  ShieldAlert,
-  Gauge,
-  SlidersHorizontal,
-  TableProperties
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
 import { CatalogStats } from '../types';
 
 interface MetricsBannerProps {
   stats: CatalogStats | null;
-  onFilterStatus?: (status: string) => void;
+  onFilterStatus: (status: string) => void;
 }
 
 export const MetricsBanner: React.FC<MetricsBannerProps> = ({ stats, onFilterStatus }) => {
-  if (!stats) return null;
+  if (!stats) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 animate-pulse">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-24 bg-slate-900/60 rounded-xl border border-white/[0.06]" />
+        ))}
+      </div>
+    );
+  }
 
-  const cards = [
+  const kpis = [
     {
-      title: 'TOTAL CATALOG SKUS',
+      label: 'Total Master Catalog',
       value: stats.total_items.toLocaleString(),
-      subtitle: '76 Canonical MFRs',
-      icon: Database,
+      subtext: 'Ingested SKUs',
       badge: '100% PARSED',
-      badgeClass: 'pim-tag-blue',
-      borderClass: 'border-pim-border hover:border-pim-borderHighlight',
-      progress: 100
+      badgeClass: 'glow-badge-cyan',
+      icon: Layers,
+      gradient: 'from-cyan-500 to-blue-600',
+      glow: 'shadow-glow-cyan',
+      onClick: () => onFilterStatus('All')
     },
     {
-      title: 'AUTO-VALIDATED READY',
-      value: `${stats.enriched_count.toLocaleString()}`,
-      subtitle: `${((stats.enriched_count / stats.total_items) * 100).toFixed(1)}% Confidence ≥ 0.85`,
-      icon: CheckCircle2,
-      badge: 'DELIVERY READY',
-      badgeClass: 'pim-tag-emerald',
-      borderClass: 'border-pim-border hover:border-emerald-500/50',
-      progress: (stats.enriched_count / stats.total_items) * 100,
-      onClick: () => onFilterStatus && onFilterStatus('Enriched')
+      label: 'Invoice Desc Gate',
+      value: `${(stats.invoice_compliance_pct * 100).toFixed(0)}%`,
+      subtext: '≤ 40 chars & CAPS',
+      badge: '100% PASS',
+      badgeClass: 'glow-badge-emerald',
+      icon: FileCheck2,
+      gradient: 'from-emerald-400 to-teal-500',
+      glow: 'shadow-glow-emerald',
+      onClick: () => onFilterStatus('Enriched')
     },
     {
-      title: 'ERP HARD GATE COMPLIANCE',
-      value: '100.0%',
-      subtitle: '0 Chars Overflow (≤40 & 60-80)',
-      icon: Gauge,
-      badge: 'ZERO DEFECTS',
-      badgeClass: 'pim-tag-emerald',
-      borderClass: 'border-pim-border hover:border-emerald-500/50',
-      progress: 100
+      label: 'Mobile Desc Spec',
+      value: `${(stats.mobile_compliance_pct * 100).toFixed(0)}%`,
+      subtext: '60–80 chars range',
+      badge: 'HARD GATED',
+      badgeClass: 'glow-badge-cyan',
+      icon: Smartphone,
+      gradient: 'from-blue-500 to-indigo-600',
+      glow: 'shadow-glow-blue',
+      onClick: () => onFilterStatus('Enriched')
     },
     {
-      title: 'CONTROLLED VOCABULARY (LOV)',
-      value: '0.0%',
-      subtitle: '100% Schema-Bound Tokens',
-      icon: SlidersHorizontal,
-      badge: '0% HALLUCINATION',
-      badgeClass: 'pim-tag-emerald',
-      borderClass: 'border-pim-border hover:border-emerald-500/50',
-      progress: 100
+      label: 'LOV Adherence',
+      value: `${(stats.lov_compliance_pct * 100).toFixed(0)}%`,
+      subtext: '0% Hallucinations',
+      badge: 'CONTROLLED',
+      badgeClass: 'glow-badge-emerald',
+      icon: ShieldCheck,
+      gradient: 'from-teal-400 to-emerald-600',
+      glow: 'shadow-glow-emerald',
+      onClick: () => onFilterStatus('Enriched')
     },
     {
-      title: 'DATA QUALITY EXCEPTIONS',
-      value: stats.flagged_count.toString(),
-      subtitle: stats.flagged_count > 0 ? 'Review Queue Action Needed' : '0 Pending Checks',
-      icon: ShieldAlert,
-      badge: stats.flagged_count > 0 ? 'TRIAGE ACTIVE' : 'CLEAN',
-      badgeClass: stats.flagged_count > 0 ? 'pim-tag-amber' : 'pim-tag-slate',
-      borderClass: stats.flagged_count > 0 ? 'border-amber-500/40 hover:border-amber-400' : 'border-pim-border',
-      progress: (stats.flagged_count / stats.total_items) * 100,
-      onClick: () => onFilterStatus && onFilterStatus('Flagged')
+      label: 'Exception Triage',
+      value: stats.flagged_count.toLocaleString(),
+      subtext: 'Confidence < 0.85',
+      badge: 'HITL QUEUE',
+      badgeClass: 'glow-badge-amber',
+      icon: AlertOctagon,
+      gradient: 'from-amber-400 to-orange-500',
+      glow: 'shadow-glow-amber',
+      onClick: () => onFilterStatus('Flagged')
     },
     {
-      title: 'DELIVERY SCHEMA SPEC',
-      value: '252 / 252',
-      subtitle: '100% Unilog Standard Headers',
-      icon: TableProperties,
-      badge: 'GROUND TRUTH',
-      badgeClass: 'pim-tag-slate',
-      borderClass: 'border-pim-border hover:border-blue-500/50',
-      progress: 100
+      label: 'Mean Confidence',
+      value: `${(stats.mean_confidence * 100).toFixed(1)}%`,
+      subtext: '5-Factor Radar',
+      badge: 'HIGH FIDELITY',
+      badgeClass: 'glow-badge-violet',
+      icon: Percent,
+      gradient: 'from-violet-500 to-purple-600',
+      glow: 'shadow-glow-violet',
+      onClick: () => onFilterStatus('All')
     }
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
-      {cards.map((card, idx) => {
-        const Icon = card.icon;
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {kpis.map((kpi, idx) => {
+        const Icon = kpi.icon;
         return (
           <div
             key={idx}
-            onClick={card.onClick}
-            className={`p-3.5 bg-pim-panel border rounded transition-all ${card.borderClass} ${
-              card.onClick ? 'cursor-pointer' : ''
-            }`}
+            onClick={kpi.onClick}
+            className="group relative glass-card p-3.5 rounded-xl cursor-pointer overflow-hidden border border-white/[0.08] hover:border-white/20"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-mono tracking-wider font-semibold text-pim-textMuted uppercase line-clamp-1">
-                {card.title}
+            {/* Top Accent Gradient Line */}
+            <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${kpi.gradient}`} />
+            
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono line-clamp-1">
+                {kpi.label}
               </span>
-              <Icon className="w-3.5 h-3.5 text-pim-textMuted flex-shrink-0" />
+              <div className={`p-1.5 rounded-lg bg-gradient-to-br ${kpi.gradient} text-white shadow-sm flex-shrink-0 transition-transform group-hover:scale-110`}>
+                <Icon className="w-3.5 h-3.5" />
+              </div>
             </div>
 
-            <div className="flex items-baseline justify-between">
-              <span className="text-xl font-bold tracking-tight text-white font-mono tnum">
-                {card.value}
-              </span>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${card.badgeClass}`}>
-                {card.badge}
+            <div className="flex items-baseline space-x-1.5">
+              <span className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight tnum">
+                {kpi.value}
               </span>
             </div>
 
-            <div className="text-[11px] text-pim-textSecondary mt-1.5 line-clamp-1 font-sans">
-              {card.subtitle}
-            </div>
-
-            {/* Micro Progress Bar */}
-            <div className="w-full bg-slate-900 h-1 rounded-full mt-2.5 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${
-                  card.title.includes('EXCEPTIONS') && card.progress > 0
-                    ? 'bg-amber-500'
-                    : 'bg-blue-600'
-                }`}
-                style={{ width: `${card.progress}%` }}
-              />
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
+              <span className="text-[10px] text-slate-400 font-medium truncate">
+                {kpi.subtext}
+              </span>
+              <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full ${kpi.badgeClass}`}>
+                {kpi.badge}
+              </span>
             </div>
           </div>
         );
