@@ -8,6 +8,8 @@ import { ReviewQueue } from './components/ReviewQueue';
 import { BenchmarkDashboard } from './components/BenchmarkDashboard';
 import { DeliveryExporter } from './components/DeliveryExporter';
 import { ToastProvider, useToast } from './components/Toast';
+import { AuthProvider } from './context/AuthContext';
+import { AuthModal } from './components/AuthModal';
 import { fetchStats, fetchReviewQueue } from './services/api';
 import { CatalogStats } from './types';
 
@@ -141,6 +143,9 @@ const DashboardContent: React.FC = () => {
         />
       )}
 
+      {/* Security & Authentication Modal */}
+      <AuthModal />
+
       {/* Modern Enterprise Footer */}
       <footer className="relative z-10 bg-[#070A11]/90 backdrop-blur-md border-t border-white/[0.06] py-3.5 text-xs text-slate-400 font-mono">
         <div className="max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-2.5">
@@ -167,9 +172,11 @@ const DashboardContent: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <ToastProvider>
-      <DashboardContent />
-    </ToastProvider>
+    <AuthProvider>
+      <ToastProvider>
+        <DashboardContent />
+      </ToastProvider>
+    </AuthProvider>
   );
 };
 

@@ -293,3 +293,26 @@ export interface BenchmarkReport {
   column_metrics: ColumnMetricResult[];
   missing_fields_summary: Record<string, number>;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'specialist' | 'reviewer' | 'viewer';
+  avatar_color: string;
+  created_at: number;
+}
+
+export interface AuthResponse {
+  token: string;
+  token_type: string;
+  user: User;
+}
+
+export interface DemoAccount {
+  role: string;
+  email: string;
+  password: string;
+  name: string;
+  description: string;
+}

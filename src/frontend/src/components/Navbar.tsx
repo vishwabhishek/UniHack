@@ -10,9 +10,15 @@ import {
   Menu,
   X,
   Sparkles,
-  Zap
+  Zap,
+  User as UserIcon,
+  LogOut,
+  LogIn,
+  Shield,
+  KeyRound
 } from 'lucide-react';
 import { CatalogStats } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   activeTab: string;
@@ -27,6 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   stats,
   reviewCount
 }) => {
+  const { user, isAuthenticated, logout, openAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -77,6 +84,21 @@ export const Navbar: React.FC<NavbarProps> = ({
     setMobileMenuOpen(false);
   };
 
+  const getRoleBadgeClass = (role?: string) => {
+    switch (role) {
+      case 'admin':
+        return 'glow-badge-cyan';
+      case 'specialist':
+        return 'glow-badge-emerald';
+      case 'reviewer':
+        return 'glow-badge-amber';
+      case 'viewer':
+        return 'glow-badge-violet';
+      default:
+        return 'glow-badge-slate';
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 bg-[#080C14]/90 backdrop-blur-xl border-b border-white/[0.08] w-full overflow-hidden shadow-glass">
       {/* Main Command Bar */}
@@ -96,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   UNILOG <span className="gradient-brand font-black">CIMPLIFI</span>
                 </span>
                 <span className="hidden sm:inline-block px-2 py-0.5 text-[9px] font-mono uppercase bg-blue-500/10 text-cyan-300 border border-blue-500/30 rounded-full font-bold">
-                  Enterprise
+                  Enterprise PIM
                 </span>
               </div>
               <p className="hidden 2xl:block text-[10px] text-slate-400 font-mono tracking-wide">
@@ -137,15 +159,68 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Mobile Drawer Button */}
-          <div className="flex md:hidden items-center space-x-2 flex-shrink-0">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
-              aria-label="Toggle navigation"
-            >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </button>
+          {/* Right Side: Security & User Profile */}
+          <div className="flex items-center space-x-2.5 flex-shrink-0">
+            {isAuthenticated && user ? (
+              <div className="flex items-center space-x-2 bg-slate-950/80 p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-white/[0.08] shadow-sm">
+                <div
+                  onClick={openAuthModal}
+                  className="flex items-center space-x-2 cursor-pointer group"
+                  title="Click to Switch Role or View Security Credentials"
+                >
+                  <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${user.avatar_color} text-white flex items-center justify-center text-xs font-extrabold shadow-sm flex-shrink-0`}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="hidden sm:block text-left">
+                    <div className="text-xs font-bold text-white leading-tight group-hover:text-cyan-300 transition-colors flex items-center space-x-1">
+                      <span>{user.name}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full ${getRoleBadgeClass(user.role)}`}>
+                        {user.role.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-4 w-[1px] bg-white/[0.08] hidden sm:block" />
+
+                <button
+                  onClick={openAuthModal}
+                  title="Switch Role / View Security Gate"
+                  className="p-1.5 text-slate-400 hover:text-cyan-300 rounded-lg hover:bg-white/[0.08] transition-colors"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  onClick={logout}
+                  title="Sign Out"
+                  className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-white/[0.08] transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={openAuthModal}
+                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-bold font-mono shadow-glow-blue transition-all border border-cyan-400/40 hover:scale-[1.02]"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>SIGN IN</span>
+              </button>
+            )}
+
+            {/* Mobile Drawer Button */}
+            <div className="flex md:hidden items-center">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
+                aria-label="Toggle navigation"
+              >
+                {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
         </div>
       </div>

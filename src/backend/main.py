@@ -16,6 +16,7 @@ from .routes.playground import router as playground_router
 from .routes.review import router as review_router
 from .routes.benchmark import router as benchmark_router
 from .routes.export import router as export_router
+from .routes.auth import router as auth_router
 
 
 @asynccontextmanager
@@ -45,6 +46,7 @@ app.add_middleware(
 )
 
 # Include API routers
+app.include_router(auth_router, prefix="/api")
 app.include_router(catalog_router)
 app.include_router(playground_router)
 app.include_router(review_router)
