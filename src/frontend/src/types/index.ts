@@ -308,11 +308,3 @@ export interface AuthResponse {
   token_type: string;
   user: User;
 }
-
-export interface DemoAccount {
-  role: string;
-  email: string;
-  password: string;
-  name: string;
-  description: string;
-}

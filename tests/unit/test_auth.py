@@ -11,6 +11,7 @@ from src.backend.auth import (
     user_store,
     verify_password,
 )
+from src.backend.config import settings
 
 
 def test_password_hashing_and_verification():
@@ -51,7 +52,6 @@ def test_jwt_token_expired():
         password_hash="hash",
         role="viewer",
     )
-    # Create expired token (-10 seconds)
     token = create_access_token(user, expires_in=-10)
     with pytest.raises(HTTPException) as exc_info:
         decode_access_token(token)
@@ -76,20 +76,9 @@ def test_jwt_token_tampered_signature():
     assert "signature" in exc_info.value.detail.lower()
 
 
-def test_user_store_preseeded_accounts():
-    admin = user_store.get_by_email("admin@unilog.com")
-    assert admin is not None
-    assert admin.role == "admin"
-    assert verify_password("Admin2026!", admin.password_hash) is True
-
-    specialist = user_store.get_by_email("specialist@unilog.com")
-    assert specialist is not None
-    assert specialist.role == "specialist"
-
-    reviewer = user_store.get_by_email("reviewer@unilog.com")
-    assert reviewer is not None
-    assert reviewer.role == "reviewer"
-
-    viewer = user_store.get_by_email("viewer@unilog.com")
-    assert viewer is not None
-    assert viewer.role == "viewer"
+def test_user_store_admin_bootstrap():
+    if settings.admin_initial_email and settings.admin_initial_password:
+        admin = user_store.get_by_email(settings.admin_initial_email)
+        assert admin is not None
+        assert admin.role == "admin"
+        assert verify_password(settings.admin_initial_password, admin.password_hash) is True

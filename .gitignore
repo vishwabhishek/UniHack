@@ -1,4 +1,9 @@
-# Environment & Dependencies
+# Environment & Credentials
+.env
+.env.*
+*.env
+*.pem
+*.key
 .venv/
 env/
 venv/

@@ -4,22 +4,17 @@ import {
   Lock,
   Mail,
   User as UserIcon,
-  Shield,
-  CheckCircle2,
+  ShieldCheck,
   AlertCircle,
   Eye,
   EyeOff,
-  Sparkles,
-  Zap,
-  ArrowRight,
-  ShieldCheck,
-  Building2
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from './Toast';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, closeAuthModal, login, register, demoAccounts, isLoading } = useAuth();
+  const { isAuthModalOpen, closeAuthModal, login, register, isLoading } = useAuth();
   const { showToast } = useToast();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -45,25 +40,13 @@ export const AuthModal: React.FC = () => {
         showToast('Account Created', `Registered as ${role.toUpperCase()}`, 'success');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Authentication failed. Please check credentials.');
-    }
-  };
-
-  const handleQuickDemoLogin = async (demo: { email: string; password: string; name: string; role: string }) => {
-    setErrorMessage(null);
-    setEmail(demo.email);
-    setPassword(demo.password);
-    try {
-      await login(demo.email, demo.password);
-      showToast('Demo Account Authenticated', `Signed in as ${demo.name} (${demo.role.toUpperCase()})`, 'success');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to authenticate demo account.');
+      setErrorMessage(err.message || 'Authentication failed. Please check your credentials.');
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="glass-panel border border-white/[0.12] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden font-sans">
+      <div className="glass-panel border border-white/[0.12] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden font-sans">
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-white/[0.08] bg-gradient-to-r from-[#0B101D] via-[#0F1626] to-[#0B101D] flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -72,11 +55,11 @@ export const AuthModal: React.FC = () => {
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-mono flex items-center space-x-2">
-                <span>UNILOG PIM SECURITY GATEWAY</span>
+                <span>UNILOG PIM SECURITY</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse-glow" />
               </h3>
               <p className="text-[11px] text-slate-400 font-sans mt-0.5">
-                JWT Authentication & Role-Based Access Control (RBAC)
+                JWT Authentication & Role-Based Access Control
               </p>
             </div>
           </div>
@@ -89,43 +72,8 @@ export const AuthModal: React.FC = () => {
           </button>
         </div>
 
-        {/* 1-Click Quick Demo Evaluation Bar */}
-        <div className="p-5 bg-slate-950/60 border-b border-white/[0.06] space-y-2.5 font-mono">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center space-x-1.5">
-              <Zap className="w-3 h-3 text-cyan-400" />
-              <span>1-CLICK QUICK EVALUATION LOGINS:</span>
-            </span>
-            <span className="text-[9px] text-slate-400">SELECT TO PRE-AUTHENTICATE</span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {demoAccounts.map((demo) => {
-              const roleColors: Record<string, string> = {
-                admin: 'border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 hover:shadow-glow-cyan',
-                specialist: 'border-blue-500/40 text-blue-300 hover:bg-blue-500/10 hover:shadow-glow-blue',
-                reviewer: 'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 hover:shadow-glow-emerald',
-                viewer: 'border-slate-500/40 text-slate-300 hover:bg-slate-500/10'
-              };
-              return (
-                <button
-                  key={demo.role}
-                  type="button"
-                  onClick={() => handleQuickDemoLogin(demo)}
-                  className={`p-2 rounded-xl bg-slate-900/80 border text-left transition-all ${
-                    roleColors[demo.role] || 'border-white/[0.08] text-slate-300'
-                  }`}
-                >
-                  <div className="text-[10px] font-extrabold uppercase">{demo.role}</div>
-                  <div className="text-[9px] text-slate-400 font-sans truncate mt-0.5">{demo.name}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Tab Toggle: Sign In / Sign Up */}
-        <div className="px-6 pt-4 flex space-x-2 border-b border-white/[0.06] font-mono text-xs">
+        <div className="px-6 pt-4 flex space-x-4 border-b border-white/[0.06] font-mono text-xs">
           <button
             type="button"
             onClick={() => {
@@ -138,7 +86,7 @@ export const AuthModal: React.FC = () => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            SIGN IN WITH CREDENTIALS
+            SIGN IN
           </button>
           <button
             type="button"
@@ -152,7 +100,7 @@ export const AuthModal: React.FC = () => {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            CREATE NEW ACCOUNT
+            CREATE ACCOUNT
           </button>
         </div>
 
@@ -186,7 +134,7 @@ export const AuthModal: React.FC = () => {
 
           <div>
             <label className="block text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">
-              CORPORATE EMAIL ADDRESS
+              CORPORATE EMAIL
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -249,7 +197,7 @@ export const AuthModal: React.FC = () => {
               disabled={isLoading}
               className="w-full flex items-center justify-center space-x-2 py-2.5 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold font-mono shadow-glow-blue transition-all disabled:opacity-50 hover:scale-[1.01]"
             >
-              <span>{isLoading ? 'AUTHENTICATING...' : mode === 'login' ? 'SIGN IN TO WORKBENCH' : 'REGISTER & LOGIN'}</span>
+              <span>{isLoading ? 'AUTHENTICATING...' : mode === 'login' ? 'SIGN IN TO WORKBENCH' : 'REGISTER & SIGN IN'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

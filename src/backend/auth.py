@@ -2,6 +2,7 @@
 
 Zero-dependency standard library implementation of PBKDF2-HMAC-SHA256 password hashing,
 RFC 7519 JWT HMAC-SHA256 token encoding/decoding, and Role-Based Access Control (RBAC).
+Configuration and secrets are loaded securely from environment variables.
 """
 
 from __future__ import annotations
@@ -10,17 +11,14 @@ import base64
 import hashlib
 import hmac
 import json
-import os
 import secrets
 import time
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 from fastapi import Depends, HTTPException, Header, status
 
-# Secret key for JWT signing (falls back to random generated key in memory or ENV)
-JWT_SECRET = os.environ.get("JWT_SECRET", "unilog-enterprise-super-secret-pim-key-2026")
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_SECONDS = 86400 * 7  # 7 days
+from .config import settings
+
 PASSWORD_SALT_BYTES = 16
 PBKDF2_ITERATIONS = 100000
 
@@ -97,9 +95,10 @@ def _base64url_decode(data_str: str) -> bytes:
     return base64.urlsafe_b64decode((data_str + padding).encode("utf-8"))
 
 
-def create_access_token(user: User, expires_in: int = JWT_EXPIRATION_SECONDS) -> str:
+def create_access_token(user: User, expires_in: Optional[int] = None) -> str:
     """Create an RFC 7519 compliant JSON Web Token signed with HMAC-SHA256."""
-    header = {"alg": JWT_ALGORITHM, "typ": "JWT"}
+    expires_in_sec = expires_in if expires_in is not None else settings.jwt_expiration_seconds
+    header = {"alg": settings.jwt_algorithm, "typ": "JWT"}
     now = int(time.time())
     payload = {
         "sub": user.id,
@@ -107,14 +106,14 @@ def create_access_token(user: User, expires_in: int = JWT_EXPIRATION_SECONDS) ->
         "name": user.name,
         "role": user.role,
         "iat": now,
-        "exp": now + expires_in,
+        "exp": now + expires_in_sec,
     }
 
     header_b64 = _base64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
     payload_b64 = _base64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
     signing_input = f"{header_b64}.{payload_b64}".encode("utf-8")
 
-    signature = hmac.new(JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256).digest()
+    signature = hmac.new(settings.jwt_secret.encode("utf-8"), signing_input, hashlib.sha256).digest()
     signature_b64 = _base64url_encode(signature)
 
     return f"{header_b64}.{payload_b64}.{signature_b64}"
@@ -132,7 +131,7 @@ def decode_access_token(token: str) -> Dict[str, Any]:
 
     header_b64, payload_b64, signature_b64 = parts
     signing_input = f"{header_b64}.{payload_b64}".encode("utf-8")
-    expected_sig = hmac.new(JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256).digest()
+    expected_sig = hmac.new(settings.jwt_secret.encode("utf-8"), signing_input, hashlib.sha256).digest()
 
     try:
         provided_sig = _base64url_decode(signature_b64)
@@ -171,34 +170,30 @@ def decode_access_token(token: str) -> Dict[str, Any]:
 
 
 # ============================================================================
-# User Store (In-Memory with Pre-Seeded Enterprise Accounts)
+# User Store (In-Memory with Environment-Configured Bootstrap)
 # ============================================================================
 
 class UserStore:
     def __init__(self) -> None:
         self._users: Dict[str, User] = {}
         self._email_index: Dict[str, str] = {}
-        self._seed_default_users()
+        self._bootstrap_initial_admin()
 
-    def _seed_default_users(self) -> None:
-        demo_accounts = [
-            ("admin@unilog.com", "Admin2026!", "Sarah Lin", "admin", "from-cyan-500 to-blue-600"),
-            ("specialist@unilog.com", "Specialist2026!", "Alex Mercer", "specialist", "from-blue-500 to-indigo-600"),
-            ("reviewer@unilog.com", "Reviewer2026!", "David Vance", "reviewer", "from-emerald-500 to-teal-600"),
-            ("viewer@unilog.com", "Viewer2026!", "Elena Rostova", "viewer", "from-slate-500 to-zinc-600"),
-        ]
-        for email, pwd, name, role, color in demo_accounts:
+    def _bootstrap_initial_admin(self) -> None:
+        """Bootstrap initial administrative user from environment variables if configured."""
+        if settings.admin_initial_email and settings.admin_initial_password:
+            email = settings.admin_initial_email.lower().strip()
             user_id = f"usr_{secrets.token_hex(4)}"
             user = User(
                 id=user_id,
-                email=email.lower().strip(),
-                name=name,
-                password_hash=hash_password(pwd),
-                role=role,
-                avatar_color=color,
+                email=email,
+                name=settings.admin_initial_name or "System Administrator",
+                password_hash=hash_password(settings.admin_initial_password),
+                role="admin",
+                avatar_color="from-cyan-500 to-blue-600",
             )
             self._users[user_id] = user
-            self._email_index[email.lower().strip()] = user_id
+            self._email_index[email] = user_id
 
     def get_by_email(self, email: str) -> Optional[User]:
         clean_email = email.lower().strip()

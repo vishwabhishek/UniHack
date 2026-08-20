@@ -9,8 +9,7 @@ import {
   ReviewQueueResponse,
   BenchmarkReport,
   AuthResponse,
-  User,
-  DemoAccount
+  User
 } from '../types';
 
 const API_BASE = '/api';
@@ -81,12 +80,6 @@ export async function getCurrentUserProfile(): Promise<User> {
     headers: getAuthHeaders()
   });
   if (!res.ok) throw new Error(`Failed to fetch current user: ${res.statusText}`);
-  return res.json();
-}
-
-export async function fetchDemoAccounts(): Promise<DemoAccount[]> {
-  const res = await fetch(`${API_BASE}/auth/demo-accounts`);
-  if (!res.ok) throw new Error(`Failed to fetch demo accounts: ${res.statusText}`);
   return res.json();
 }
 

@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthResponse, DemoAccount } from '../types';
+import { User, AuthResponse } from '../types';
 import {
   loginUser,
   registerUser,
   getCurrentUserProfile,
   setAuthToken,
-  getAuthToken,
-  fetchDemoAccounts
+  getAuthToken
 } from '../services/api';
 
 interface AuthContextType {
@@ -15,7 +14,6 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isAuthModalOpen: boolean;
-  demoAccounts: DemoAccount[];
   openAuthModal: () => void;
   closeAuthModal: () => void;
   login: (email: string, password: string) => Promise<void>;
@@ -34,35 +32,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [token, setToken] = useState<string | null>(getAuthToken());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>([]);
 
   useEffect(() => {
     loadInitialUser();
-    loadDemoAccounts();
   }, []);
-
-  const loadDemoAccounts = async () => {
-    try {
-      const demos = await fetchDemoAccounts();
-      setDemoAccounts(demos);
-    } catch (e) {
-      console.error('Failed to load demo accounts:', e);
-    }
-  };
 
   const loadInitialUser = async () => {
     const savedToken = getAuthToken();
     if (!savedToken) {
-      // Auto-login as default Lead Architect (Admin) for frictionless judge demo experience
-      try {
-        const res = await loginUser('admin@unilog.com', 'Admin2026!');
-        setUser(res.user);
-        setToken(res.token);
-      } catch (e) {
-        console.error('Failed to auto-login demo admin:', e);
-      } finally {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
       return;
     }
 
@@ -71,7 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(profile);
       setToken(savedToken);
     } catch (e) {
-      console.error('Failed to fetch user profile with saved token:', e);
+      console.error('Session expired or invalid token:', e);
       setAuthToken(null);
       setUser(null);
       setToken(null);
@@ -127,7 +105,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated: !!user,
         isLoading,
         isAuthModalOpen,
-        demoAccounts,
         openAuthModal: () => setIsAuthModalOpen(true),
         closeAuthModal: () => setIsAuthModalOpen(false),
         login,

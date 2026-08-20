@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, EmailStr, Field
+from typing import Any, Dict, List
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..auth import (
     User,
     create_access_token,
     get_current_user,
-    hash_password,
     require_roles,
     user_store,
     verify_password,
@@ -35,14 +34,6 @@ class AuthResponse(BaseModel):
     token: str
     token_type: str = "Bearer"
     user: Dict[str, Any]
-
-
-class DemoAccount(BaseModel):
-    role: str
-    email: str
-    password: str
-    name: str
-    description: str
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -87,42 +78,7 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)) -> 
     return current_user.to_dict()
 
 
-@router.get("/demo-accounts", response_model=List[DemoAccount])
-def get_demo_accounts() -> List[DemoAccount]:
-    """Return list of pre-seeded demo enterprise accounts for 1-click evaluation."""
-    return [
-        DemoAccount(
-            role="admin",
-            email="admin@unilog.com",
-            password="Admin2026!",
-            name="Sarah Lin",
-            description="Full enterprise control, catalog overrides, user management & syndication",
-        ),
-        DemoAccount(
-            role="specialist",
-            email="specialist@unilog.com",
-            password="Specialist2026!",
-            name="Alex Mercer",
-            description="Master data curation, inline cell editing, sandbox testing & approval",
-        ),
-        DemoAccount(
-            role="reviewer",
-            email="reviewer@unilog.com",
-            password="Reviewer2026!",
-            name="David Vance",
-            description="Quality assurance lead, HITL triage board review & validation",
-        ),
-        DemoAccount(
-            role="viewer",
-            email="viewer@unilog.com",
-            password="Viewer2026!",
-            name="Elena Rostova",
-            description="Read-only compliance auditor & 252-column schema inspection",
-        ),
-    ]
-
-
 @router.get("/users", response_model=List[Dict[str, Any]])
 def list_users(current_user: User = Depends(require_roles(["admin"]))) -> List[Dict[str, Any]]:
-    """List all registered platform users (Admin-only)."""
+    """List all registered platform users (Admin-only RBAC)."""
     return [u.to_dict() for u in user_store.list_all()]
