@@ -229,6 +229,80 @@ export async function fetchProductKnowledgeGraph(id: string): Promise<{
   return res.json();
 }
 
+// ============================================================================
+// LlamaIndex Neural RAG Hybrid Search Endpoints
+// ============================================================================
+
+export interface RAGSearchResult {
+  product_id: string;
+  row_id: number;
+  mfg_part_number: string;
+  sku: string;
+  brand_name: string;
+  manufacturer_name: string;
+  classpath: string;
+  unspsc: string;
+  short_desc: string;
+  invoice_desc: string;
+  mobile_desc: string;
+  confidence_score: number;
+  status: string;
+  hybrid_score: number;
+  dense_score: number;
+  bm25_score: number;
+  match_reason: string;
+  attributes: Array<{ label: string; value: string; uom?: string }>;
+}
+
+export interface RAGSearchResponse {
+  query: string;
+  total_results: number;
+  latency_ms: number;
+  embedding_model: string;
+  retrieval_strategy: string;
+  synthesis: string;
+  results: RAGSearchResult[];
+}
+
+export async function fetchRAGSearch(params: {
+  q: string;
+  top_k?: number;
+  dense_weight?: number;
+  min_confidence?: number;
+  category?: string;
+  status?: string;
+}): Promise<RAGSearchResponse> {
+  const query = new URLSearchParams();
+  query.append('q', params.q);
+  if (params.top_k) query.append('top_k', params.top_k.toString());
+  if (params.dense_weight !== undefined) query.append('dense_weight', params.dense_weight.toString());
+  if (params.min_confidence !== undefined) query.append('min_confidence', params.min_confidence.toString());
+  if (params.category && params.category !== 'All') query.append('category', params.category);
+  if (params.status && params.status !== 'All') query.append('status', params.status);
+
+  const res = await fetch(`${API_BASE}/rag/search?${query.toString()}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to execute LlamaIndex RAG search: ${res.statusText}`);
+  return res.json();
+}
+
+export async function fetchRAGInfo(): Promise<{
+  status: string;
+  embedding_model: string;
+  vector_dimensions: number;
+  total_documents_indexed: number;
+  retrievers: string[];
+  hybrid_fusion: string;
+}> {
+  const res = await fetch(`${API_BASE}/rag/info`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch RAG metadata: ${res.statusText}`);
+  return res.json();
+}
+
+
 
 // ============================================================================
 // Playground & Transformation Endpoints

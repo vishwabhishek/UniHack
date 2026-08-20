@@ -81,6 +81,13 @@ class CatalogState:
             settings.output_dir.mkdir(parents=True, exist_ok=True)
             self._sync_output_csv()
 
+            # Ingest & Index into LlamaIndex & Neural Embedding RAG Engine
+            try:
+                from .rag_engine import rag_engine
+                rag_engine.index_catalog(self._products_list)
+            except Exception as ex:
+                print(f"Warning: LlamaIndex RAG indexing deferred or encountered issue: {ex}")
+
             self._initialized = True
 
     def _index_product(self, prod: EnrichedProduct):

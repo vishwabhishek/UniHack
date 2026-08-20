@@ -84,6 +84,23 @@ def run_browser_tests():
             search_input.fill("")
             time.sleep(0.5)
 
+        # Step 4b: Test LlamaIndex Neural RAG Semantic Search
+        print("\n[STEP 4b] Testing LlamaIndex Neural RAG Semantic Search...")
+        rag_button = page.locator("button:has-text('LlamaIndex RAG')")
+        if rag_button.is_visible():
+            rag_button.click()
+            time.sleep(0.5)
+            rag_input = page.locator("input[placeholder*='Ask natural language']").first
+            if rag_input.is_visible():
+                rag_input.fill("quiet dishwasher 120V stainless steel")
+                time.sleep(1.5)
+                page.screenshot(path=str(OUTPUT_DIR / "04b_catalog_rag_search.png"), full_page=True)
+                print("  📸 Captured: 04b_catalog_rag_search.png")
+                assert "LLAMAININDEX HYBRID RETRIEVAL" in page.content(), "RAG retrieval banner not visible"
+                # Switch back to standard exact filter
+                page.locator("button:has-text('Exact Filter')").click()
+                time.sleep(0.5)
+
         # Step 5: Test Transformation Inspector Modal
         print("\n[STEP 5] Testing Transformation Inspector Modal...")
         first_row_inspect = page.locator("button:has-text('inspect')").first

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ProductListItem, FilterOptionItem } from '../types';
-import { fetchProducts, fetchFilters } from '../services/api';
+import { fetchProducts, fetchFilters, fetchRAGSearch, RAGSearchResult } from '../services/api';
 import { useToast } from './Toast';
-import { ChevronLeft, ChevronRight, ExternalLink, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Search, X, Sparkles, Sliders, Zap } from 'lucide-react';
 
 interface CatalogExplorerProps {
   onInspectProduct: (productId: string) => void;
@@ -30,7 +30,12 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
 
-  const debounceTimerRef = useRef<any>(null);
+  // Search Engine Mode: Standard Exact/Token vs LlamaIndex Neural RAG
+  const [searchMode, setSearchMode] = useState<'standard' | 'rag'>('standard');
+  const [ragResults, setRagResults] = useState<RAGSearchResult[]>([]);
+  const [ragSynthesis, setRagSynthesis] = useState<string>('');
+  const [ragLatency, setRagLatency] = useState<number>(0);
+  const [denseWeight, setDenseWeight] = useState<number>(0.65);
 
   useEffect(() => {
     setSelectedStatus(initialStatus);
@@ -47,8 +52,12 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [page, limit, searchTerm, selectedCategory, selectedStatus]);
+    if (searchMode === 'rag' && searchTerm.trim()) {
+      executeRAGSearch();
+    } else {
+      loadData();
+    }
+  }, [page, limit, searchTerm, selectedCategory, selectedStatus, searchMode, denseWeight]);
 
   const loadFilters = async () => {
     try {
@@ -79,6 +88,34 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
     }
   };
 
+  const executeRAGSearch = async () => {
+    if (!searchTerm.trim()) {
+      loadData();
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetchRAGSearch({
+        q: searchTerm.trim(),
+        top_k: 25,
+        dense_weight: denseWeight,
+        category: selectedCategory || undefined,
+        status: selectedStatus !== 'All' ? selectedStatus : undefined
+      });
+      setRagResults(res.results || []);
+      setRagSynthesis(res.synthesis || '');
+      setRagLatency(res.latency_ms || 0);
+      setTotalCount(res.total_results || 0);
+    } catch (e) {
+      console.error('Failed to execute LlamaIndex RAG search:', e);
+      showToast('RAG Search', 'Falling back to standard search', 'error');
+      setSearchMode('standard');
+      loadData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSearchInputChange = (val: string) => {
     setSearchTerm(val);
     setPage(1);
@@ -89,6 +126,8 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
 
   const handleClearSearch = () => {
     setSearchTerm('');
+    setRagResults([]);
+    setRagSynthesis('');
     setPage(1);
     if (onSearchChange) {
       onSearchChange('');
@@ -99,6 +138,8 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
     setSearchTerm('');
     setSelectedStatus('All');
     setSelectedCategory('');
+    setRagResults([]);
+    setRagSynthesis('');
     setPage(1);
     if (onSearchChange) {
       onSearchChange('');
@@ -143,25 +184,63 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
 
   const totalPages = Math.ceil(totalCount / limit) || 1;
 
+  const RAG_PRESETS = [
+    'quiet dishwasher 120V stainless steel',
+    'heavy duty diablo sanding disc for wood',
+    'milwaukee saw blade 18 TPI',
+    '3M abrasive wheel'
+  ];
+
   return (
     <div className="panel bg-[var(--surface-2)] border border-[var(--border)] rounded-[10px] overflow-hidden font-sans">
       
       {/* Panel Head */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center p-[16px_18px] border-b border-[var(--border)] gap-3">
         
-        <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
           <h3 className="text-[13px] font-semibold text-[var(--text-primary)] whitespace-nowrap">
             Catalog explorer
           </h3>
 
-          {/* In-Panel Search Bar */}
+          {/* Mode Switcher */}
+          <div className="flex items-center bg-[var(--surface-1)] p-0.5 rounded-lg border border-[var(--border-strong)] font-mono text-[11px]">
+            <button
+              onClick={() => {
+                setSearchMode('standard');
+                setPage(1);
+              }}
+              className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
+                searchMode === 'standard'
+                  ? 'bg-[var(--surface-2)] text-[var(--text-primary)] font-semibold shadow-sm'
+                  : 'text-[var(--text-muted)] hover:text-white'
+              }`}
+            >
+              Exact Filter
+            </button>
+            <button
+              onClick={() => {
+                setSearchMode('rag');
+                setPage(1);
+              }}
+              className={`px-2.5 py-1 rounded flex items-center gap-1.5 transition-all cursor-pointer ${
+                searchMode === 'rag'
+                  ? 'bg-[var(--cyan-bg)] text-[var(--cyan)] font-semibold shadow-sm border border-[var(--cyan)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--cyan)]'
+              }`}
+            >
+              <Sparkles className="w-3 h-3 text-[var(--cyan)]" />
+              <span>LlamaIndex RAG</span>
+            </button>
+          </div>
+
+          {/* Search Input Bar */}
           <div className="relative w-full sm:w-72">
             <Search className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => handleSearchInputChange(e.target.value)}
-              placeholder="search SKU, MPN, brand, UNSPSC…"
+              placeholder={searchMode === 'rag' ? "Ask natural language question..." : "search SKU, MPN, brand, UNSPSC…"}
               className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md pl-9 pr-7 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] font-mono focus:outline-none focus:border-[var(--cyan)]"
             />
             {searchTerm && (
@@ -214,22 +293,68 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
         </div>
       </div>
 
+      {/* RAG Synthesis & Prompt Suggestions (When in RAG Mode) */}
+      {searchMode === 'rag' && (
+        <div className="p-[12px_18px] bg-[var(--bg)] border-b border-[var(--border)] font-mono text-xs space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-[11px]">
+              <span className="text-[var(--cyan)] flex items-center gap-1 font-semibold">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>LLAMAININDEX HYBRID RETRIEVAL:</span>
+              </span>
+              <span className="text-[var(--text-muted)]">
+                FastEmbed BAAI/bge-small-en-v1.5 + BM25 Lexical Fusion
+              </span>
+            </div>
+
+            {ragLatency > 0 && (
+              <div className="flex items-center gap-2 text-[11px] text-[var(--green)]">
+                <Zap className="w-3 h-3" />
+                <span>{ragLatency.toFixed(1)} ms latency</span>
+              </div>
+            )}
+          </div>
+
+          {ragSynthesis && (
+            <div className="p-2.5 bg-[var(--surface-1)] rounded border border-[var(--cyan)]/30 text-[11px] text-[var(--text-primary)]">
+              {ragSynthesis}
+            </div>
+          )}
+
+          {/* Quick RAG Sample Prompts */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[10px] text-[var(--text-muted)]">TRY PROMPTS:</span>
+            {RAG_PRESETS.map((p) => (
+              <button
+                key={p}
+                onClick={() => handleSearchInputChange(p)}
+                className="px-2 py-0.5 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[10px] text-[var(--text-secondary)] hover:text-[var(--cyan)] hover:border-[var(--cyan)] cursor-pointer"
+              >
+                &ldquo;{p}&rdquo;
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <colgroup>
             <col style={{ width: '18%' }} />
             <col style={{ width: '15%' }} />
-            <col style={{ width: '28%' }} />
-            <col style={{ width: '16%' }} />
-            <col style={{ width: '11%' }} />
-            <col style={{ width: '12%' }} />
+            <col style={{ width: searchMode === 'rag' ? '22%' : '28%' }} />
+            {searchMode === 'rag' && <col style={{ width: '15%' }} />}
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '8%' }} />
           </colgroup>
           <thead>
             <tr>
               <th>SKU / MPN</th>
               <th>Brand</th>
-              <th>Classpath</th>
+              <th>{searchMode === 'rag' ? 'Classpath / Reason' : 'Classpath'}</th>
+              {searchMode === 'rag' && <th>Hybrid Match Score</th>}
               <th>Confidence</th>
               <th>Status</th>
               <th className="text-right">Action</th>
@@ -239,15 +364,15 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
             {loading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
-                  <td colSpan={6} className="py-4 px-[18px]">
+                  <td colSpan={searchMode === 'rag' ? 7 : 6} className="py-4 px-[18px]">
                     <div className="h-4 bg-[var(--surface-1)] rounded w-full" />
                   </td>
                 </tr>
               ))
-            ) : products.length === 0 ? (
+            ) : (searchMode === 'rag' ? ragResults.length === 0 : products.length === 0) ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-[var(--text-muted)] font-mono text-xs space-y-3">
-                  <p>No catalog records matching active search query &quot;{searchTerm}&quot; or filter criteria.</p>
+                <td colSpan={searchMode === 'rag' ? 7 : 6} className="py-12 text-center text-[var(--text-muted)] font-mono text-xs space-y-3">
+                  <p>No catalog records matching active query &quot;{searchTerm}&quot; or filter criteria.</p>
                   {(searchTerm || selectedStatus !== 'All' || selectedCategory) && (
                     <button
                       onClick={handleClearAllFilters}
@@ -258,6 +383,47 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
                   )}
                 </td>
               </tr>
+            ) : searchMode === 'rag' ? (
+              ragResults.map((item) => (
+                <tr
+                  key={item.product_id}
+                  onClick={() => onInspectProduct(item.product_id)}
+                  className="cursor-pointer hover:bg-[rgba(255,255,255,0.015)] transition-colors"
+                >
+                  <td className="mono cell-primary">
+                    {item.mfg_part_number || item.sku || `SKU-${item.row_id}`}
+                  </td>
+                  <td className="cell-secondary">{item.brand_name || '— unresolved —'}</td>
+                  <td className="cell-secondary">
+                    <div className="truncate max-w-[240px]" title={item.classpath}>
+                      {item.classpath}
+                    </div>
+                    <div className="text-[10px] text-[var(--cyan)] truncate max-w-[240px]">
+                      {item.match_reason}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="font-mono text-xs flex items-center gap-1.5">
+                      <span className="font-semibold text-[var(--green)]">{(item.hybrid_score * 100).toFixed(1)}%</span>
+                      <span className="text-[9px] text-[var(--text-muted)]">(D: {item.dense_score.toFixed(2)} | B: {item.bm25_score.toFixed(2)})</span>
+                    </div>
+                  </td>
+                  <td>{renderMiniGauge(item.confidence_score)}</td>
+                  <td>{renderStatusChip(item.status)}</td>
+                  <td className="text-right">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onInspectProduct(item.product_id);
+                      }}
+                      className="text-[11px] font-mono text-[var(--cyan)] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>inspect</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))
             ) : (
               products.map((item) => (
                 <tr
@@ -296,34 +462,36 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
       {/* Pagination Bar */}
       <div className="flex items-center justify-between p-[12px_18px] border-t border-[var(--border)] font-mono text-xs text-[var(--text-muted)]">
         <div>
-          Showing <span className="text-[var(--text-primary)]">{products.length}</span> of{' '}
+          Showing <span className="text-[var(--text-primary)]">{searchMode === 'rag' ? ragResults.length : products.length}</span> of{' '}
           <span className="text-[var(--text-primary)]">{totalCount}</span> SKUs
           {searchTerm && (
             <span className="text-[var(--cyan)] ml-2">
-              (matching &quot;{searchTerm}&quot;)
+              ({searchMode === 'rag' ? 'semantic neural RAG query' : 'matching'} &quot;{searchTerm}&quot;)
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page <= 1}
-            className="p-1 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white disabled:opacity-30 cursor-pointer"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </button>
-          <span>
-            {page} / {totalPages}
-          </span>
-          <button
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
-            disabled={page >= totalPages}
-            className="p-1 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white disabled:opacity-30 cursor-pointer"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        {searchMode !== 'rag' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page <= 1}
+              className="p-1 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white disabled:opacity-30 cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span>
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages}
+              className="p-1 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white disabled:opacity-30 cursor-pointer"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
     </div>
