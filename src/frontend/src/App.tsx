@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
+import { Topbar } from './components/Topbar';
 import { MetricsBanner } from './components/MetricsBanner';
 import { CatalogExplorer } from './components/CatalogExplorer';
 import { TransformationInspector } from './components/TransformationInspector';
@@ -84,80 +85,100 @@ const DashboardContent: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col items-center justify-center font-sans space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-glow-cyan border border-cyan-400/40 animate-pulse">
-          <Database className="w-6 h-6 text-white" />
+      <div className="min-h-screen bg-[#0B0E13] text-[#E7EAF0] flex flex-col items-center justify-center font-sans space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-[#12161D] border border-[#232935] flex items-center justify-center text-[#45E0D6] shadow-[0_0_24px_rgba(69,224,214,0.2)] animate-pulse">
+          <Database className="w-6 h-6" />
         </div>
         <div className="text-center font-mono space-y-1">
-          <p className="text-xs font-extrabold text-cyan-400 tracking-wider">VERIFYING SECURE SESSION</p>
-          <p className="text-[11px] text-slate-400">Loading UniHack Enterprise PIM...</p>
+          <p className="text-xs font-bold text-[#45E0D6] tracking-wider">VERIFYING SECURE SESSION</p>
+          <p className="text-[11px] text-[#8B93A3]">Connecting to Unilog PIM API...</p>
         </div>
       </div>
     );
   }
 
-  // Strict Authentication Gate: If unauthenticated, render the full-screen Login/Signup Portal only!
+  // Strict Authentication Gate: If unauthenticated, render the split Login Portal only!
   if (!isAuthenticated || !user) {
     return <LoginPage />;
   }
 
   return (
-    <div className="min-h-screen bg-[#080C14] text-slate-100 flex flex-col antialiased selection:bg-cyan-500 selection:text-white font-sans relative overflow-x-hidden">
-      {/* Background Ambient Radial Light Cones */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-blue-600/10 blur-[140px] rounded-full" />
-        <div className="absolute top-1/3 right-10 w-[500px] h-[450px] bg-indigo-600/10 blur-[160px] rounded-full" />
-        <div className="absolute bottom-10 left-1/3 w-[700px] h-[350px] bg-cyan-600/10 blur-[180px] rounded-full" />
-      </div>
+    <div className="min-h-screen bg-[#0B0E13] text-[#E7EAF0] flex font-sans overflow-hidden">
+      
+      {/* ZONE 2: PRIMARY SIDEBAR (Left Navigation) */}
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        stats={stats}
+        reviewCount={reviewCount}
+      />
 
-      {/* Modern Frosted Header */}
-      <div className="relative z-10">
-        <Navbar
+      {/* RIGHT VIEWPORT CONTAINER */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-y-auto">
+        
+        {/* ZONE 1: GLOBAL TOPBAR (Fixed Top Header) */}
+        <Topbar
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
           stats={stats}
-          reviewCount={reviewCount}
         />
+
+        {/* ZONE 3: CONTEXTUAL CONTENT AREA */}
+        <main className="flex-1 p-4 sm:p-6 space-y-5 max-w-[1800px] w-full">
+          
+          {/* KPI Metrics Strip */}
+          <MetricsBanner
+            stats={stats}
+            onFilterStatus={handleFilterStatusFromBanner}
+          />
+
+          {/* Active Workspace View */}
+          <div className="transition-all duration-150">
+            {activeTab === 'catalog' && (
+              <CatalogExplorer
+                onInspectProduct={handleInspect}
+                onEditProduct={handleEdit}
+                initialStatus={catalogFilterStatus}
+              />
+            )}
+
+            {activeTab === 'playground' && (
+              <InteractivePlayground />
+            )}
+
+            {activeTab === 'review' && (
+              <ReviewQueue
+                onInspectProduct={handleInspect}
+                onRefreshCatalog={loadGlobalState}
+              />
+            )}
+
+            {activeTab === 'benchmark' && (
+              <BenchmarkDashboard />
+            )}
+
+            {activeTab === 'export' && (
+              <DeliveryExporter />
+            )}
+          </div>
+        </main>
+
+        {/* Footer Audit Bar */}
+        <footer className="bg-[#12161D] border-t border-[#232935] px-6 py-3 text-xs text-[#8B93A3] font-mono flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-white">UNILOG CIMPLIFI™</span>
+            <span>·</span>
+            <span>252-COLUMN MASTER DELIVERY STANDARD</span>
+            <span>·</span>
+            <span className="text-[#3DDC84] font-bold">100% LOV COMPLIANCE</span>
+          </div>
+          <div className="flex items-center space-x-3 text-[11px]">
+            <span className="text-[#3DDC84]">FASTAPI ENGINE :8000</span>
+            <span>·</span>
+            <span className="text-[#45E0D6] font-bold">&lt; 12ms LATENCY</span>
+          </div>
+        </footer>
+
       </div>
-
-      {/* Main Content Workspace */}
-      <main className="relative z-10 flex-1 max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6 py-5 space-y-5">
-        {/* KPI Metrics Streamer */}
-        <MetricsBanner
-          stats={stats}
-          onFilterStatus={handleFilterStatusFromBanner}
-        />
-
-        {/* Dynamic Workspace Container */}
-        <div className="transition-all duration-200">
-          {activeTab === 'catalog' && (
-            <CatalogExplorer
-              onInspectProduct={handleInspect}
-              onEditProduct={handleEdit}
-              initialStatus={catalogFilterStatus}
-            />
-          )}
-
-          {activeTab === 'playground' && (
-            <InteractivePlayground />
-          )}
-
-          {activeTab === 'review' && (
-            <ReviewQueue
-              onInspectProduct={handleInspect}
-              onRefreshCatalog={loadGlobalState}
-            />
-          )}
-
-          {activeTab === 'benchmark' && (
-            <BenchmarkDashboard />
-          )}
-
-          {activeTab === 'export' && (
-            <DeliveryExporter />
-          )}
-        </div>
-      </main>
 
       {/* Dual-Pane Transformation Workbench Modal */}
       {inspectProductId && (
@@ -172,26 +193,6 @@ const DashboardContent: React.FC = () => {
       {/* Security & Authentication Modal */}
       <AuthModal />
 
-      {/* Modern Enterprise Footer */}
-      <footer className="relative z-10 bg-[#070A11]/90 backdrop-blur-md border-t border-white/[0.06] py-3.5 text-xs text-slate-400 font-mono">
-        <div className="max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          <div className="flex items-center space-x-2">
-            <span className="font-extrabold text-white">UNILOG CIMPLIFI™ PIM PLATFORM</span>
-            <span className="text-slate-700">|</span>
-            <span className="text-slate-300">252-COLUMN MASTER DELIVERY STANDARD</span>
-            <span className="text-slate-700">|</span>
-            <span className="text-emerald-400 font-bold">0% HALLUCINATION GUARANTEE</span>
-          </div>
-          <div className="flex items-center space-x-3 text-slate-400 text-[11px]">
-            <span className="flex items-center space-x-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
-              <span className="text-slate-200 font-semibold">ENGINE: FASTAPI :8000</span>
-            </span>
-            <span className="text-slate-700">|</span>
-            <span className="text-cyan-300 font-bold">SUB-12MS THROUGHPUT</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
