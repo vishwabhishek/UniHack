@@ -1,8 +1,8 @@
-"""Enterprise Security, Password Hashing & JWT RBAC Module.
+"""Enterprise Security, Password Hashing, JWT RBAC & Rate Limiting Module.
 
-Zero-dependency standard library implementation of PBKDF2-HMAC-SHA256 password hashing,
-RFC 7519 JWT HMAC-SHA256 token encoding/decoding, and Role-Based Access Control (RBAC).
-Configuration and secrets are loaded securely from environment variables.
+FIPS-compliant / OWASP-acceptable PBKDF2-HMAC-SHA256 password hashing,
+RFC 7519 JWT HMAC-SHA256 token encoding/decoding with algorithm enforcement,
+in-memory brute-force rate limiting, and security event auditing.
 """
 
 from __future__ import annotations
@@ -12,10 +12,11 @@ import hashlib
 import hmac
 import json
 import secrets
+import threading
 import time
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
-from fastapi import Depends, HTTPException, Header, status
+from fastapi import Depends, HTTPException, Header, Request, status
 
 from .config import settings
 
@@ -42,6 +43,85 @@ class User:
             "avatar_color": self.avatar_color,
             "created_at": self.created_at,
         }
+
+
+# ============================================================================
+# Security Event Audit Logger
+# ============================================================================
+
+class SecurityAuditLogger:
+    """Thread-safe in-memory security event log for audit compliance."""
+    def __init__(self, max_entries: int = 1000) -> None:
+        self.max_entries = max_entries
+        self.events: List[Dict[str, Any]] = []
+        self._lock = threading.Lock()
+
+    def log_event(self, event_type: str, details: Dict[str, Any], level: str = "INFO") -> None:
+        event = {
+            "timestamp": time.time(),
+            "iso_time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+            "level": level,
+            "event_type": event_type,
+            "details": details,
+        }
+        with self._lock:
+            self.events.append(event)
+            if len(self.events) > self.max_entries:
+                self.events.pop(0)
+
+    def get_events(self, limit: int = 100) -> List[Dict[str, Any]]:
+        with self._lock:
+            return list(reversed(self.events[-limit:]))
+
+
+security_logger = SecurityAuditLogger()
+
+
+# ============================================================================
+# In-Memory Sliding Window Rate Limiter
+# ============================================================================
+
+class LoginRateLimiter:
+    """In-memory sliding window rate limiter to mitigate brute-force password guessing."""
+    def __init__(self, max_attempts: int = 5, window_seconds: int = 60) -> None:
+        self.max_attempts = max_attempts
+        self.window_seconds = window_seconds
+        self._attempts: Dict[str, List[float]] = {}
+        self._lock = threading.Lock()
+
+    def check_rate_limit(self, key: str) -> None:
+        now = time.time()
+        with self._lock:
+            timestamps = self._attempts.get(key, [])
+            timestamps = [t for t in timestamps if now - t < self.window_seconds]
+            self._attempts[key] = timestamps
+            if len(timestamps) >= self.max_attempts:
+                retry_after = int(self.window_seconds - (now - timestamps[0]))
+                security_logger.log_event(
+                    "LOGIN_RATE_LIMIT_EXCEEDED",
+                    {"key": key, "attempts": len(timestamps), "retry_after": retry_after},
+                    level="WARNING"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=f"Too many failed login attempts. Access temporarily throttled. Retry in {max(1, retry_after)} seconds.",
+                    headers={"Retry-After": str(max(1, retry_after))},
+                )
+
+    def record_failed_attempt(self, key: str) -> None:
+        now = time.time()
+        with self._lock:
+            timestamps = self._attempts.get(key, [])
+            timestamps = [t for t in timestamps if now - t < self.window_seconds]
+            timestamps.append(now)
+            self._attempts[key] = timestamps
+
+    def reset(self, key: str) -> None:
+        with self._lock:
+            self._attempts.pop(key, None)
+
+
+login_rate_limiter = LoginRateLimiter(max_attempts=5, window_seconds=60)
 
 
 # ============================================================================
@@ -120,7 +200,7 @@ def create_access_token(user: User, expires_in: Optional[int] = None) -> str:
 
 
 def decode_access_token(token: str) -> Dict[str, Any]:
-    """Verify and decode an access token. Raises HTTPException on invalid/expired token."""
+    """Verify and decode an access token. Strictly enforces algorithm and raises HTTPException on invalid/expired token."""
     parts = token.split(".")
     if len(parts) != 3:
         raise HTTPException(
@@ -130,6 +210,26 @@ def decode_access_token(token: str) -> Dict[str, Any]:
         )
 
     header_b64, payload_b64, signature_b64 = parts
+
+    # 1. Header Validation (Reject 'alg: none' and non-HS256 algorithms)
+    try:
+        header = json.loads(_base64url_decode(header_b64).decode("utf-8"))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Malformed token header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if header.get("alg") != settings.jwt_algorithm or header.get("alg") == "none":
+        security_logger.log_event("JWT_ALGORITHM_MISMATCH", {"received_alg": header.get("alg")}, level="WARNING")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Unauthorized algorithm '{header.get('alg')}'. Only '{settings.jwt_algorithm}' is permitted.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 2. Signature Validation
     signing_input = f"{header_b64}.{payload_b64}".encode("utf-8")
     expected_sig = hmac.new(settings.jwt_secret.encode("utf-8"), signing_input, hashlib.sha256).digest()
 
@@ -143,12 +243,14 @@ def decode_access_token(token: str) -> Dict[str, Any]:
         )
 
     if not hmac.compare_digest(expected_sig, provided_sig):
+        security_logger.log_event("JWT_SIGNATURE_INVALID", {"header": header}, level="WARNING")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token signature",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # 3. Payload & Expiry Validation
     try:
         payload = json.loads(_base64url_decode(payload_b64).decode("utf-8"))
     except Exception:
@@ -158,7 +260,6 @@ def decode_access_token(token: str) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Expiration check
     if "exp" in payload and payload["exp"] < int(time.time()):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -233,6 +334,7 @@ class UserStore:
         )
         self._users[user_id] = user
         self._email_index[clean_email] = user_id
+        security_logger.log_event("USER_CREATED", {"user_id": user_id, "email": clean_email, "role": role})
         return user
 
     def list_all(self) -> List[User]:
@@ -245,21 +347,6 @@ user_store = UserStore()
 # ============================================================================
 # FastAPI Dependency Injectors for RBAC
 # ============================================================================
-
-def get_current_user_optional(authorization: Optional[str] = Header(None)) -> Optional[User]:
-    """Extract user from Authorization: Bearer <token> if present, otherwise return None."""
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    token = authorization.split("Bearer ")[1].strip()
-    try:
-        payload = decode_access_token(token)
-        user_id = payload.get("sub")
-        if user_id:
-            return user_store.get_by_id(user_id)
-    except HTTPException:
-        pass
-    return None
-
 
 def get_current_user(authorization: Optional[str] = Header(None)) -> User:
     """Require valid JWT token in Authorization header."""
@@ -286,6 +373,11 @@ def require_roles(allowed_roles: List[str]):
     """Enforce Role-Based Access Control (RBAC)."""
     def role_checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in allowed_roles:
+            security_logger.log_event(
+                "RBAC_ACCESS_DENIED",
+                {"user_id": current_user.id, "role": current_user.role, "required_roles": allowed_roles},
+                level="WARNING"
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Forbidden: Action requires one of roles: {', '.join(allowed_roles)}. Your role is '{current_user.role}'.",

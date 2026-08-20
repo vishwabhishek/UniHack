@@ -404,29 +404,53 @@ class CatalogState:
         }
 
     # -----------------------------------------------------------------------
-    # Export Services
+    # Export Services & CSV Formula Injection Sanitization (CWE-1236)
     # -----------------------------------------------------------------------
 
-    def get_export_dataframe(self, status: Optional[str] = None, search: Optional[str] = None) -> pd.DataFrame:
-        """Construct pandas DataFrame containing 252 columns for filtered or full catalog."""
+    @staticmethod
+    def _sanitize_csv_cell(val: Any) -> Any:
+        """Sanitize cell value to neutralize spreadsheet formula injection (=, +, -, @, |, TAB)."""
+        if isinstance(val, str) and val:
+            if val[0] in ("=", "+", "-", "@", "\t", "\r", "|"):
+                try:
+                    float(val)
+                    return val
+                except ValueError:
+                    return f"'{val}"
+        return val
+
+    def get_export_dataframe(
+        self,
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+        sanitize_formulas: bool = True
+    ) -> pd.DataFrame:
+        """Construct pandas DataFrame containing 252 columns with formula injection defenses."""
         if not getattr(self, "_initialized", False):
             self.initialize()
         items, _ = self.list_products(search=search, status=status, limit=10000)
-        rows = [to_delivery_dict(p) for p in items]
+        
+        rows = []
+        for p in items:
+            row_dict = to_delivery_dict(p)
+            if sanitize_formulas:
+                row_dict = {k: self._sanitize_csv_cell(v) for k, v in row_dict.items()}
+            rows.append(row_dict)
+
         if not rows:
             return pd.DataFrame(columns=DeliveryMapper.get_column_headers())
         return pd.DataFrame(rows)
 
     def get_export_csv_bytes(self, status: Optional[str] = None, search: Optional[str] = None) -> bytes:
-        """Stream 252-column CSV bytes."""
-        df = self.get_export_dataframe(status=status, search=search)
+        """Stream 252-column CSV bytes with formula injection defense."""
+        df = self.get_export_dataframe(status=status, search=search, sanitize_formulas=True)
         output = io.StringIO()
         df.to_csv(output, index=False)
         return output.getvalue().encode("utf-8")
 
     def get_export_excel_bytes(self, status: Optional[str] = None, search: Optional[str] = None) -> bytes:
-        """Stream 252-column Excel (.xlsx) bytes."""
-        df = self.get_export_dataframe(status=status, search=search)
+        """Stream 252-column Excel (.xlsx) bytes with formula injection defense."""
+        df = self.get_export_dataframe(status=status, search=search, sanitize_formulas=True)
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             df.to_excel(writer, index=False, sheet_name="Enriched Catalog 252")
