@@ -9,22 +9,37 @@ import pandas as pd
 from starlette.testclient import TestClient
 from src.backend.main import app
 from src.backend.state import catalog_state
+from src.backend.config import settings
 from src.pipeline.delivery_mapper import DeliveryMapper
 
 
 @pytest.fixture(scope="module")
 def client():
-    """Create test client with initialized catalog state."""
+    """Create authenticated test client with initialized catalog state."""
     catalog_state.initialize()
     with TestClient(app) as test_client:
+        # Authenticate as admin
+        login_res = test_client.post("/api/auth/login", json={
+            "email": settings.admin_initial_email or "admin@unilog.com",
+            "password": settings.admin_initial_password or "ChangeMeAdmin2026!"
+        })
+        token = login_res.json()["token"]
+        test_client.headers["Authorization"] = f"Bearer {token}"
         yield test_client
 
 
 class TestAPIEndpoints:
     """Test suite covering all FastAPI REST API routes."""
 
+    def test_unauthenticated_request_blocked(self):
+        """Verify that requests without JWT Bearer token are blocked with 401."""
+        with TestClient(app) as raw_client:
+            res = raw_client.get("/api/products")
+            assert res.status_code == 401
+            assert "Missing Bearer" in res.json()["detail"] or "unauthorized" in res.json()["detail"].lower()
+
     def test_health_check_endpoint(self, client: TestClient):
-        """Verify /api/health returns healthy operational status."""
+        """Verify /api/health returns healthy operational status without auth."""
         response = client.get("/api/health")
         assert response.status_code == 200
         data = response.json()

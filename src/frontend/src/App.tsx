@@ -8,12 +8,15 @@ import { ReviewQueue } from './components/ReviewQueue';
 import { BenchmarkDashboard } from './components/BenchmarkDashboard';
 import { DeliveryExporter } from './components/DeliveryExporter';
 import { ToastProvider, useToast } from './components/Toast';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { LoginPage } from './components/LoginPage';
 import { AuthModal } from './components/AuthModal';
 import { fetchStats, fetchReviewQueue } from './services/api';
 import { CatalogStats } from './types';
+import { Database } from 'lucide-react';
 
 const DashboardContent: React.FC = () => {
+  const { isAuthenticated, isLoading, user } = useAuth();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<string>('catalog');
   const [stats, setStats] = useState<CatalogStats | null>(null);
@@ -22,11 +25,14 @@ const DashboardContent: React.FC = () => {
   const [catalogFilterStatus, setCatalogFilterStatus] = useState<string>('All');
 
   useEffect(() => {
-    loadGlobalState();
-  }, []);
+    if (isAuthenticated) {
+      loadGlobalState();
+    }
+  }, [isAuthenticated]);
 
-  // Keyboard shortcut listeners (1-5 to switch tabs, Esc to close inspector)
+  // Keyboard shortcut listeners (1-5 to switch tabs)
   useEffect(() => {
+    if (!isAuthenticated) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         document.activeElement?.tagName === 'INPUT' ||
@@ -45,7 +51,7 @@ const DashboardContent: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isAuthenticated]);
 
   const loadGlobalState = async () => {
     try {
@@ -75,6 +81,26 @@ const DashboardContent: React.FC = () => {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col items-center justify-center font-sans space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-glow-cyan border border-cyan-400/40 animate-pulse">
+          <Database className="w-6 h-6 text-white" />
+        </div>
+        <div className="text-center font-mono space-y-1">
+          <p className="text-xs font-extrabold text-cyan-400 tracking-wider">VERIFYING SECURE SESSION</p>
+          <p className="text-[11px] text-slate-400">Loading UniHack Enterprise PIM...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Strict Authentication Gate: If unauthenticated, render the full-screen Login/Signup Portal only!
+  if (!isAuthenticated || !user) {
+    return <LoginPage />;
+  }
+
   return (
     <div className="min-h-screen bg-[#080C14] text-slate-100 flex flex-col antialiased selection:bg-cyan-500 selection:text-white font-sans relative overflow-x-hidden">
       {/* Background Ambient Radial Light Cones */}
@@ -102,8 +128,8 @@ const DashboardContent: React.FC = () => {
           onFilterStatus={handleFilterStatusFromBanner}
         />
 
-        {/* Tab Views */}
-        <div className="transition-opacity duration-200">
+        {/* Dynamic Workspace Container */}
+        <div className="transition-all duration-200">
           {activeTab === 'catalog' && (
             <CatalogExplorer
               onInspectProduct={handleInspect}

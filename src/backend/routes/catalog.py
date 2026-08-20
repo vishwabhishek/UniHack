@@ -4,8 +4,9 @@ Catalog Exploration, Search, Detail, and Statistics Endpoints.
 
 import math
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 
+from ..auth import User, get_current_user
 from ..state import catalog_state
 from ..schemas import (
     ProductListResponse,
@@ -31,7 +32,8 @@ def get_products(
     min_confidence: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum confidence threshold"),
     max_confidence: Optional[float] = Query(None, ge=0.0, le=1.0, description="Maximum confidence threshold"),
     sort_by: str = Query("row_id", description="Sort field (row_id, confidence, mfg_part_num, brand, status)"),
-    sort_dir: str = Query("asc", description="Sort direction (asc, desc)")
+    sort_dir: str = Query("asc", description="Sort direction (asc, desc)"),
+    current_user: User = Depends(get_current_user)
 ):
     """Retrieve paginated and filtered catalog records."""
     products, total = catalog_state.list_products(
@@ -85,7 +87,7 @@ def get_products(
 
 
 @router.get("/products/{product_id}", response_model=ProductDetailResponse)
-def get_product_detail(product_id: str):
+def get_product_detail(product_id: str, current_user: User = Depends(get_current_user)):
     """Retrieve full 252-column product detail and metadata for a single item."""
     res = catalog_state.get_product(product_id)
     if not res:
@@ -169,12 +171,12 @@ def get_product_detail(product_id: str):
 
 
 @router.get("/stats", response_model=CatalogStatsResponse)
-def get_catalog_stats():
+def get_catalog_stats(current_user: User = Depends(get_current_user)):
     """Retrieve catalog KPI counters, compliance pass rates, and category/brand distributions."""
     return catalog_state.get_stats()
 
 
 @router.get("/filters", response_model=FilterOptionsResponse)
-def get_filter_facets():
+def get_filter_facets(current_user: User = Depends(get_current_user)):
     """Retrieve distinct status, category, and brand options with item counts."""
     return catalog_state.get_filter_options()

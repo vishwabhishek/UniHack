@@ -3,9 +3,10 @@
 """
 
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Response, Query
+from fastapi import APIRouter, Response, Query, Depends
 from fastapi.responses import Response
 
+from ..auth import User, get_current_user
 from ..state import catalog_state
 from src.pipeline.delivery_mapper import DeliveryMapper
 
@@ -15,7 +16,8 @@ router = APIRouter(prefix="/api/export", tags=["Export"])
 @router.get("/csv")
 def export_catalog_csv(
     status: Optional[str] = Query(None, description="Optional status filter (e.g. Validated, Enriched)"),
-    search: Optional[str] = Query(None, description="Optional search filter")
+    search: Optional[str] = Query(None, description="Optional search filter"),
+    current_user: User = Depends(get_current_user)
 ):
     """Stream full 252-column CSV file for the active or filtered catalog."""
     csv_bytes = catalog_state.get_export_csv_bytes(status=status, search=search)
@@ -31,7 +33,8 @@ def export_catalog_csv(
 @router.get("/xlsx")
 def export_catalog_excel(
     status: Optional[str] = Query(None, description="Optional status filter"),
-    search: Optional[str] = Query(None, description="Optional search filter")
+    search: Optional[str] = Query(None, description="Optional search filter"),
+    current_user: User = Depends(get_current_user)
 ):
     """Stream full 252-column Microsoft Excel (.xlsx) file."""
     xlsx_bytes = catalog_state.get_export_excel_bytes(status=status, search=search)
@@ -45,7 +48,7 @@ def export_catalog_excel(
 
 
 @router.get("/columns")
-def get_column_definitions():
+def get_column_definitions(current_user: User = Depends(get_current_user)):
     """Retrieve metadata, groups, and column list for all 252 Unilog delivery headers."""
     headers = DeliveryMapper.get_column_headers()
     

@@ -3,8 +3,9 @@ Human-In-The-Loop (HITL) Review Queue, Product Editor, and Approval Endpoints.
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Depends
 
+from ..auth import User, get_current_user, require_roles
 from ..state import catalog_state
 from ..schemas import (
     ReviewQueueResponse,
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/api/review", tags=["Review Queue"])
 
 
 @router.get("/queue", response_model=ReviewQueueResponse)
-def get_review_queue():
+def get_review_queue(current_user: User = Depends(get_current_user)):
     """Fetch all products requiring human review (confidence < 0.85 or flagged status)."""
     items = catalog_state.get_review_queue()
 
@@ -65,7 +66,11 @@ def get_review_queue():
 
 
 @router.post("/{product_id}/approve", response_model=ApprovalResponse)
-def approve_product(product_id: str, payload: Optional[ApprovalPayload] = None):
+def approve_product(
+    product_id: str,
+    payload: Optional[ApprovalPayload] = None,
+    current_user: User = Depends(require_roles(["admin", "specialist", "reviewer"]))
+):
     """Approve a product record for production delivery, promoting status to 'Validated'."""
     notes = payload.notes if payload else ""
     prod = catalog_state.approve_product(product_id, notes=notes)
@@ -81,7 +86,11 @@ def approve_product(product_id: str, payload: Optional[ApprovalPayload] = None):
 
 
 @router.post("/{product_id}/reject", response_model=ApprovalResponse)
-def reject_product(product_id: str, payload: Optional[ApprovalPayload] = None):
+def reject_product(
+    product_id: str,
+    payload: Optional[ApprovalPayload] = None,
+    current_user: User = Depends(require_roles(["admin", "specialist", "reviewer"]))
+):
     """Flag or reject a product record with feedback for review."""
     reason = payload.notes if (payload and payload.notes) else "Rejected by human reviewer"
     prod = catalog_state.reject_product(product_id, reason=reason)
@@ -97,7 +106,11 @@ def reject_product(product_id: str, payload: Optional[ApprovalPayload] = None):
 
 
 @router.put("/{product_id}", response_model=ProductDetailResponse)
-def update_product_detail(product_id: str, payload: ProductUpdatePayload):
+def update_product_detail(
+    product_id: str,
+    payload: ProductUpdatePayload,
+    current_user: User = Depends(require_roles(["admin", "specialist"]))
+):
     """Apply manual edits to descriptions, taxonomy, brand, or attributes."""
     prod = catalog_state.update_product(product_id, payload.model_dump(exclude_unset=True))
     if not prod:

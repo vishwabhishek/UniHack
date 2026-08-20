@@ -6,8 +6,9 @@ step-by-step stage visualization.
 
 import time
 from typing import List, Dict, Any
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from ..auth import User, get_current_user
 from ..state import catalog_state
 from ..schemas import (
     TransformRequest,
@@ -94,13 +95,13 @@ PRESET_SAMPLES: List[Dict[str, Any]] = [
 
 
 @router.get("/presets", response_model=List[PlaygroundPreset])
-def get_presets():
+def get_presets(current_user: User = Depends(get_current_user)):
     """Retrieve preloaded test records for instantaneous 1-click evaluation."""
     return [PlaygroundPreset(**p) for p in PRESET_SAMPLES]
 
 
 @router.post("/transform", response_model=TransformResponse)
-def transform_product(payload: TransformRequest):
+def transform_product(payload: TransformRequest, current_user: User = Depends(get_current_user)):
     """Execute live multi-stage pipeline transformation with step-by-step latency tracking."""
     engine = catalog_state.engine
     t_start = time.perf_counter()

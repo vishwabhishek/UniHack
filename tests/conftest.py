@@ -364,7 +364,16 @@ def api_client():
     from starlette.testclient import TestClient
     try:
         from src.backend.main import app
-        return TestClient(app)
+        from src.backend.config import settings
+        tc = TestClient(app)
+        login_res = tc.post("/api/auth/login", json={
+            "email": settings.admin_initial_email or "admin@unilog.com",
+            "password": settings.admin_initial_password or "ChangeMeAdmin2026!"
+        })
+        if login_res.status_code == 200:
+            token = login_res.json()["token"]
+            tc.headers["Authorization"] = f"Bearer {token}"
+        return tc
     except Exception:
         # Fallback dummy test app for contract validation if backend milestone in progress
         from fastapi import FastAPI
