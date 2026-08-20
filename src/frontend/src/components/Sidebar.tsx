@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center gap-2 px-2 pb-6">
           <div className="w-2.5 h-2.5 rounded-[2px] bg-[var(--cyan)]" />
           <div className="font-mono text-xs tracking-[0.06em] text-[var(--text-primary)] font-medium">
-            UNIHACK PIM
+            UNIHACK SIMPLIFI
           </div>
         </div>
 

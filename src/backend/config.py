@@ -32,7 +32,7 @@ _load_dotenv(PROJECT_ROOT / ".env")
 
 class Settings(BaseModel):
     """Application configuration settings and file path definitions."""
-    app_name: str = "UniHack Industrial Product Intelligence PIM API"
+    app_name: str = "UniHack Simplifi PIM API"
     app_version: str = "1.0.0"
     debug: bool = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
     environment: str = os.getenv("ENVIRONMENT", "development")

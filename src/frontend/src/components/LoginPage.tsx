@@ -44,7 +44,7 @@ export const LoginPage: React.FC = () => {
               <div className="w-2.5 h-2.5 rounded-[2px] bg-[var(--cyan)]" />
               <div>
                 <div className="font-mono text-sm tracking-[0.06em] text-[var(--text-primary)] font-medium">
-                  UNIHACK PIM
+                  UNIHACK SIMPLIFI
                 </div>
                 <div className="text-xs text-[var(--text-muted)] tracking-[0.03em] mt-0.5">
                   Industrial product intelligence &amp; enrichment

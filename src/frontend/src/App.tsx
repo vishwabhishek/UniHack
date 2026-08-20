@@ -91,7 +91,7 @@ const DashboardContent: React.FC = () => {
         </div>
         <div className="text-center font-mono space-y-1">
           <p className="text-xs font-semibold text-[var(--cyan)] tracking-wider">VERIFYING SECURE SESSION</p>
-          <p className="text-[11px] text-[var(--text-muted)]">Connecting to Unilog PIM API...</p>
+          <p className="text-[11px] text-[var(--text-muted)]">Connecting to UniHack Simplifi API...</p>
         </div>
       </div>
     );
