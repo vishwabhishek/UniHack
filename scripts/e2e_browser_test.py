@@ -126,6 +126,14 @@ def run_browser_tests():
                 print("  📸 Captured: 06b_inspector_knowledge_graph.png")
                 assert "CONNECTED ONTOLOGICAL ENTITIES" in page.content(), "Knowledge graph view failed to render"
 
+            prov_tab = page.locator("button:has-text('EVIDENCE & PROVENANCE')")
+            if prov_tab.is_visible():
+                prov_tab.click()
+                time.sleep(0.5)
+                page.screenshot(path=str(OUTPUT_DIR / "06c_inspector_provenance_lineage.png"))
+                print("  📸 Captured: 06c_inspector_provenance_lineage.png")
+                assert "FIELD-LEVEL PROVENANCE" in page.content(), "Provenance view failed to render"
+
             schema_tab = page.locator("button:has-text('ALL 252 COLUMNS')")
             if schema_tab.is_visible():
                 schema_tab.click()

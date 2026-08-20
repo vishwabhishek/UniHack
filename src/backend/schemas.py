@@ -133,7 +133,7 @@ class ProductDetailResponse(BaseModel):
     selling_qty: Optional[str] = "1"
     selling_uom: Optional[str] = "EA"
     standard_packaging: Optional[str] = ""
-    country_of_origin: Optional[str] = "US"
+    country_of_origin: Optional[str] = ""
     discontinued: Optional[str] = "No"
     
     # Digital Assets
@@ -142,10 +142,11 @@ class ProductDetailResponse(BaseModel):
     actual_image: Optional[str] = "No"
     documents: Dict[str, str] = Field(default_factory=dict)
     
-    # Quality & Confidence
+    # Quality, Confidence & Provenance
     confidence_score: float
     confidence_breakdown: Dict[str, float] = Field(default_factory=dict)
     validation_flags: List[str] = Field(default_factory=list)
+    field_provenance: Dict[str, Any] = Field(default_factory=dict)
     status: str
     
     # 252-Column Dictionary

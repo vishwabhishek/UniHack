@@ -56,6 +56,17 @@ export interface ProductListResponse {
   total_pages: number;
 }
 
+export interface FieldProvenance {
+  field_name: string;
+  source_url?: string;
+  source_type: string;
+  extraction_method: string;
+  section_or_rule?: string;
+  timestamp: string;
+  confidence: number;
+  verified: boolean;
+}
+
 export interface ProductDetail {
   id: string;
   row_id: number;
@@ -98,6 +109,7 @@ export interface ProductDetail {
   list_price?: string;
   selling_qty?: string;
   selling_uom?: string;
+  country_of_origin?: string;
   product_image?: string;
   alternate_images?: string[];
   actual_image?: string;
@@ -105,6 +117,7 @@ export interface ProductDetail {
   confidence_score: number;
   confidence_breakdown: Record<string, number>;
   validation_flags: string[];
+  field_provenance?: Record<string, FieldProvenance>;
   status: string;
   delivery_columns?: Record<string, string>;
 }

@@ -17,11 +17,27 @@ class RawProduct(BaseModel):
     row_id: Optional[int] = None
 
 
+from datetime import datetime, timezone
+
+
+class FieldProvenance(BaseModel):
+    """Traceable provenance and evidence lineage for an enriched field."""
+    field_name: str
+    source_url: Optional[str] = None
+    source_type: str = "raw_input"  # raw_input | canonical_dictionary | manufacturer_doc | rule_engine | human_curated | unverified
+    extraction_method: str = "deterministic_regex"  # deterministic_regex | entity_lookup | uom_converter | lov_graph | formula_builder | manual_override
+    section_or_rule: Optional[str] = None
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    confidence: float = 1.0
+    verified: bool = True
+
+
 class AttributeTriple(BaseModel):
     """Normalized technical specification slot triple (Label, Value, UOM)."""
     label: str = ""
     value: str = ""
     uom: Optional[str] = ""
+    provenance: Optional[FieldProvenance] = None
 
 
 class PhysicalDimensions(BaseModel):
@@ -40,6 +56,8 @@ class PhysicalDimensions(BaseModel):
 
 class EnrichedProduct(BaseModel):
     """Comprehensive 252-column standard enriched product entity."""
+    # Field-level traceable provenance dictionary
+    field_provenance: Dict[str, FieldProvenance] = Field(default_factory=dict)
     # Core Identifiers
     part_number: str = ""
     sku: str = ""

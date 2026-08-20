@@ -158,6 +158,7 @@ def get_product_detail(product_id: str, current_user: User = Depends(get_current
         list_price=prod.list_price or "",
         selling_qty=prod.selling_qty or "1",
         selling_uom=prod.selling_uom or "EA",
+        country_of_origin=prod.country_of_origin or "",
         product_image=prod.product_image or "",
         alternate_images=prod.alternate_images or [],
         actual_image=prod.actual_image or "No",
@@ -165,6 +166,7 @@ def get_product_detail(product_id: str, current_user: User = Depends(get_current
         confidence_score=prod.confidence_score,
         confidence_breakdown=prod.confidence_breakdown,
         validation_flags=prod.validation_flags,
+        field_provenance={k: (v.model_dump() if hasattr(v, "model_dump") else v) for k, v in prod.field_provenance.items()},
         status=prod.status,
         delivery_columns=deliv_dict
     )

@@ -135,12 +135,8 @@ class DeliveryMapper:
         row["VOLUME"] = dims.volume or ""
         row["VOLUME_UOM"] = dims.volume_uom or ""
 
-        # 11. Digital Assets
-        clean_brand_asset = re.sub(r"[^A-Za-z0-9]", "", p.brand_name).upper() or "BRAND"
-        clean_mpn_asset = re.sub(r"[^A-Za-z0-9_\-]", "", p.mfg_part_number or p.raw.mfg_part_num)
-        
-        primary_img = p.product_image or f"{clean_brand_asset}_{clean_mpn_asset}.jpg"
-        row["Product Image"] = primary_img
+        # 11. Digital Assets (strictly from verified evidence, never invented)
+        row["Product Image"] = p.product_image or ""
 
         alt_imgs = p.alternate_images or []
         for i in range(1, 5):
@@ -151,7 +147,7 @@ class DeliveryMapper:
         row["SDS_1"] = docs.get("SDS_1", "")
         row["Warranty Information"] = docs.get("Warranty Information", "")
         row["Catalog"] = docs.get("Catalog", "")
-        row["Specification Sheet"] = docs.get("Specification Sheet", f"{clean_brand_asset}_{clean_mpn_asset}_Specification_Sheet.pdf")
+        row["Specification Sheet"] = docs.get("Specification Sheet", "")
         row["Instruction/Installation Manual"] = docs.get("Instruction/Installation Manual", "")
         row["Service Manual"] = docs.get("Service Manual", "")
         row["Owners/User Manual"] = docs.get("Owners/User Manual", "")
@@ -168,10 +164,10 @@ class DeliveryMapper:
         row["Video Link"] = docs.get("Video Link", "")
         row["Video Link 1"] = docs.get("Video Link 1", "")
 
-        # 12. Flags
+        # 12. Flags & Provenance
         row["Country Of Origin"] = p.country_of_origin or ""
         row["Discontinued"] = p.discontinued or "No"
-        row["Actual Image (Yes/No)"] = p.actual_image or "Yes"
+        row["Actual Image (Yes/No)"] = "Yes" if p.product_image else (p.actual_image or "No")
 
         # Verify exact column order
         ordered_row = {col: row.get(col, "") for col in cls.COLUMNS}
