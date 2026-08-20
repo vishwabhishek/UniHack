@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Download,
   FileSpreadsheet,
   FileText,
-  Filter,
-  CheckCircle2,
-  ShieldCheck
 } from 'lucide-react';
 import { fetchExportColumns, getExportCsvUrl, getExportXlsxUrl, fetchProducts } from '../services/api';
 import { ProductListItem } from '../types';
@@ -58,32 +54,27 @@ export const DeliveryExporter: React.FC = () => {
     <div className="space-y-4 font-sans">
       
       {/* Header Summary */}
-      <div className="p-4 rounded-xl bg-[#12161D] border border-[#232935] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-[#1A1F29] border border-[#232935] flex items-center justify-center text-[#45E0D6]">
-            <Download className="w-5 h-5" />
+      <div className="p-[16px_18px] rounded-[10px] bg-[var(--surface-2)] border border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-mono font-semibold text-[var(--text-primary)] uppercase tracking-wider">
+              252-COLUMN MASTER DELIVERY SYNDICATION EXPORTER
+            </h2>
+            <span className="chip validated">
+              CWE-1236 FORMULA DEFENSE ON
+            </span>
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h2 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                252-COLUMN MASTER DELIVERY SYNDICATION EXPORTER
-              </h2>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#45E0D6]/10 text-[#45E0D6] border border-[#45E0D6]/25">
-                CWE-1236 FORMULA DEFENSE ON
-              </span>
-            </div>
-            <p className="text-xs text-[#8B93A3] mt-0.5">
-              Export enriched product catalog into the certified 252-column enterprise distributor schema
-            </p>
-          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">
+            Export enriched product catalog into the certified 252-column enterprise distributor schema
+          </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <a
             href={csvUrl}
             download="unilog_252_catalog_export.csv"
-            className="flex items-center space-x-1.5 px-3.5 py-2 bg-[#45E0D6] hover:bg-[#34cbbf] text-[#0B0E13] rounded-xl text-xs font-bold font-mono transition-all shadow-[0_0_12px_rgba(69,224,214,0.25)]"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[var(--cyan)] hover:opacity-90 text-[#06201D] rounded-md text-xs font-semibold font-mono transition-opacity cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5" />
             <span>EXPORT 252-COL CSV</span>
@@ -91,7 +82,7 @@ export const DeliveryExporter: React.FC = () => {
           <a
             href={xlsxUrl}
             download="unilog_252_catalog_export.xlsx"
-            className="flex items-center space-x-1.5 px-3.5 py-2 bg-[#3DDC84]/15 hover:bg-[#3DDC84]/25 text-[#3DDC84] border border-[#3DDC84]/30 rounded-xl text-xs font-bold font-mono transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[var(--green-bg)] hover:opacity-90 text-[var(--green)] border border-[var(--green)] rounded-md text-xs font-semibold font-mono transition-opacity cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>EXPORT EXCEL (.XLSX)</span>
@@ -99,45 +90,83 @@ export const DeliveryExporter: React.FC = () => {
         </div>
       </div>
 
-      {/* Schema Structure & Field Groups */}
-      {columnsData && (
-        <div className="bg-[#12161D] border border-[#232935] rounded-xl p-4.5 space-y-4 shadow-sm font-mono text-xs">
-          <div className="flex items-center justify-between pb-2.5 border-b border-[#232935]">
-            <span className="text-[10px] font-bold uppercase text-[#8B93A3]">
-              UNILOG 252-COLUMN MASTER DELIVERY SCHEMA BLUEPRINT
+      {/* Filter & Schema Scope Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        
+        {/* Left Column: Scope & Groups (4 cols) */}
+        <div className="lg:col-span-4 bg-[var(--surface-2)] rounded-[10px] p-4.5 border border-[var(--border)] space-y-4 font-mono text-xs">
+          <div>
+            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block mb-2">
+              EXPORT STATUS FILTER
             </span>
-            <span className="text-[10px] text-[#3DDC84] font-bold">252/252 COLUMNS CERTIFIED</span>
-          </div>
-
-          {/* Group Tabs */}
-          <div className="flex flex-wrap gap-1.5">
-            {Object.keys(columnsData.groups).map((grp) => (
-              <button
-                key={grp}
-                onClick={() => setActiveGroup(grp)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  activeGroup === grp
-                    ? 'bg-[#1A1F29] text-[#45E0D6] border border-[#232935]'
-                    : 'bg-[#0B0E13] text-[#8B93A3] hover:text-white border border-[#232935]'
-                }`}
-              >
-                {grp} ({columnsData.groups[grp].length})
-              </button>
-            ))}
-          </div>
-
-          {/* Columns in Active Group */}
-          <div className="p-3 bg-[#0B0E13] rounded-lg border border-[#232935]">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 text-[11px]">
-              {(columnsData.groups[activeGroup] || []).map((col) => (
-                <div key={col} className="p-1.5 bg-[#12161D] rounded border border-[#232935] text-[#E7EAF0] truncate">
-                  {col}
-                </div>
+            <div className="flex flex-wrap gap-1.5">
+              {['All', 'Validated', 'Enriched', 'Flagged'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setExportStatus(status)}
+                  className={`chip-filter cursor-pointer ${
+                    exportStatus === status
+                      ? 'border-[var(--cyan)] text-[var(--cyan)] bg-[var(--cyan-bg)]'
+                      : ''
+                  }`}
+                >
+                  {status.toLowerCase()}
+                </button>
               ))}
             </div>
           </div>
+
+          <div>
+            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] block mb-2">
+              COLUMN GROUPS ({columnsData?.total_columns || 252} TOTAL)
+            </span>
+            <div className="space-y-1">
+              {columnsData &&
+                Object.keys(columnsData.groups).map((grp) => (
+                  <button
+                    key={grp}
+                    onClick={() => setActiveGroup(grp)}
+                    className={`w-full text-left p-2 rounded-md transition-colors flex items-center justify-between text-xs cursor-pointer ${
+                      activeGroup === grp
+                        ? 'bg-[var(--surface-1)] text-[var(--cyan)] font-semibold border border-[var(--border-strong)]'
+                        : 'text-[var(--text-muted)] hover:text-white'
+                    }`}
+                  >
+                    <span className="truncate">{grp}</span>
+                    <span className="text-[10px] text-[var(--text-muted)]">
+                      {columnsData.groups[grp].length} cols
+                    </span>
+                  </button>
+                ))}
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Right Column: Column Headers In Active Group (8 cols) */}
+        <div className="lg:col-span-8 bg-[var(--surface-2)] rounded-[10px] p-4.5 border border-[var(--border)] space-y-3 font-mono text-xs">
+          <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+            <span className="text-[10px] font-bold uppercase text-[var(--cyan)]">
+              ACTIVE GROUP: {activeGroup}
+            </span>
+            <span className="text-[10px] text-[var(--text-muted)]">
+              {columnsData?.groups[activeGroup]?.length || 0} columns
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
+            {columnsData?.groups[activeGroup]?.map((colName, idx) => (
+              <div
+                key={colName}
+                className="p-2 bg-[var(--surface-1)] rounded border border-[var(--border)] flex items-center gap-2"
+              >
+                <span className="text-[10px] text-[var(--text-muted)] w-6">{idx + 1}.</span>
+                <span className="text-[var(--text-primary)] font-semibold text-xs truncate">{colName}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
 
     </div>
   );

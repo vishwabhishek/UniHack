@@ -7,8 +7,7 @@ import {
   ShieldCheck,
   AlertCircle,
   Eye,
-  EyeOff,
-  ArrowRight
+  EyeOff
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from './Toast';
@@ -34,7 +33,7 @@ export const AuthModal: React.FC = () => {
     try {
       if (mode === 'login') {
         await login(email, password);
-        showToast('Authenticated', `Welcome back to Unilog PIM!`, 'success');
+        showToast('Authenticated', 'Welcome back to Unilog PIM!', 'success');
       } else {
         await register(email, password, name, role);
         showToast('Account Created', `Registered as ${role.toUpperCase()}`, 'success');
@@ -45,45 +44,43 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="glass-panel border border-white/[0.12] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden font-sans">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 font-sans">
+      <div className="bg-[var(--surface-2)] border border-[var(--border-strong)] rounded-xl w-full max-w-md shadow-2xl overflow-hidden">
+        
         {/* Modal Header */}
-        <div className="px-6 py-5 border-b border-white/[0.08] bg-gradient-to-r from-[#0B101D] via-[#0F1626] to-[#0B101D] flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-glow-cyan border border-cyan-400/40">
-              <ShieldCheck className="w-5 h-5 text-white" />
-            </div>
+        <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--surface-1)] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-2.5 h-2.5 rounded-[2px] bg-[var(--cyan)]" />
             <div>
-              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-mono flex items-center space-x-2">
-                <span>UNILOG PIM SECURITY</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse-glow" />
+              <h3 className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider font-mono">
+                PIM SECURITY &amp; ACCESS GATE
               </h3>
-              <p className="text-[11px] text-slate-400 font-sans mt-0.5">
-                JWT Authentication & Role-Based Access Control
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                JWT Authentication &amp; RBAC Permissions
               </p>
             </div>
           </div>
 
           <button
             onClick={closeAuthModal}
-            className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/[0.08] transition-colors"
+            className="p-1.5 text-[var(--text-muted)] hover:text-white rounded-md hover:bg-[var(--surface-2)] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Tab Toggle: Sign In / Sign Up */}
-        <div className="px-6 pt-4 flex space-x-4 border-b border-white/[0.06] font-mono text-xs">
+        {/* Mode Selector */}
+        <div className="px-6 pt-4 flex gap-4 border-b border-[var(--border)] font-mono text-xs">
           <button
             type="button"
             onClick={() => {
               setMode('login');
               setErrorMessage(null);
             }}
-            className={`pb-3 font-bold transition-all relative ${
+            className={`pb-3 font-semibold transition-all cursor-pointer ${
               mode === 'login'
-                ? 'text-cyan-300 border-b-2 border-cyan-400'
-                : 'text-slate-400 hover:text-white'
+                ? 'text-[var(--cyan)] border-b-2 border-[var(--cyan)]'
+                : 'text-[var(--text-secondary)] hover:text-white'
             }`}
           >
             SIGN IN
@@ -94,114 +91,106 @@ export const AuthModal: React.FC = () => {
               setMode('register');
               setErrorMessage(null);
             }}
-            className={`pb-3 font-bold transition-all relative ${
+            className={`pb-3 font-semibold transition-all cursor-pointer ${
               mode === 'register'
-                ? 'text-cyan-300 border-b-2 border-cyan-400'
-                : 'text-slate-400 hover:text-white'
+                ? 'text-[var(--cyan)] border-b-2 border-[var(--cyan)]'
+                : 'text-[var(--text-secondary)] hover:text-white'
             }`}
           >
-            CREATE ACCOUNT
+            REGISTER NEW PROFILE
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Modal Body */}
+        <div className="p-6">
           {errorMessage && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center space-x-2 font-mono">
+            <div className="mb-4 p-2.5 bg-[var(--red-bg)] border border-[var(--red)] rounded-md text-[var(--red)] text-xs flex items-center gap-2 font-mono">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
-          {mode === 'register' && (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === 'register' && (
+              <div>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">Full Name</label>
+                <div className="relative">
+                  <UserIcon className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Alex Mercer"
+                    className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md pl-9 pr-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--cyan)]"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
-              <label className="block text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">
-                FULL NAME
-              </label>
+              <label className="block text-xs text-[var(--text-secondary)] mb-1">Corporate Email</label>
               <div className="relative">
-                <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
-                  type="text"
+                  type="email"
                   required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Alex Mercer"
-                  className="w-full pl-9 pr-3 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-400 focus:border-cyan-400"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@unilog.com"
+                  className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md pl-9 pr-3 py-2 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--cyan)]"
                 />
               </div>
             </div>
-          )}
 
-          <div>
-            <label className="block text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">
-              CORPORATE EMAIL
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@unilog.com"
-                className="w-full pl-9 pr-3 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-400 focus:border-cyan-400 font-mono"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">
-              PASSWORD
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password..."
-                className="w-full pl-9 pr-10 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl text-xs text-white placeholder-slate-400 focus:border-cyan-400 font-mono"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-              >
-                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-          </div>
-
-          {mode === 'register' && (
             <div>
-              <label className="block text-[10px] font-mono uppercase font-bold text-slate-400 mb-1">
-                ASSIGN ROLE
-              </label>
-              <select
-                value={role}
-                onChange={(e: any) => setRole(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-950/80 border border-white/[0.08] rounded-xl text-xs text-slate-200 focus:border-cyan-400 font-mono"
-              >
-                <option value="specialist">Catalog Specialist (Edit, Sandbox, Approve)</option>
-                <option value="reviewer">Data Reviewer (Triage & Approvals)</option>
-                <option value="admin">Administrator (Full Access)</option>
-                <option value="viewer">Viewer (Read-Only Compliance)</option>
-              </select>
+              <label className="block text-xs text-[var(--text-secondary)] mb-1">Password</label>
+              <div className="relative">
+                <Lock className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md pl-9 pr-9 py-2 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--cyan)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-white cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
             </div>
-          )}
 
-          <div className="pt-2">
+            {mode === 'register' && (
+              <div>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">Assigned Role</label>
+                <select
+                  value={role}
+                  onChange={(e: any) => setRole(e.target.value)}
+                  className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md px-3 py-2 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--cyan)] cursor-pointer"
+                >
+                  <option value="specialist">Catalog Specialist (Edit &amp; Approve)</option>
+                  <option value="reviewer">Data Reviewer (Triage &amp; Approvals)</option>
+                  <option value="admin">Platform Administrator (Full Access)</option>
+                  <option value="viewer">Auditor / Viewer (Read-Only)</option>
+                </select>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center space-x-2 py-2.5 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold font-mono shadow-glow-blue transition-all disabled:opacity-50 hover:scale-[1.01]"
+              className="w-full bg-[var(--cyan)] text-[#06201D] font-semibold text-xs rounded-md py-2.5 mt-2 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
             >
-              <span>{isLoading ? 'AUTHENTICATING...' : mode === 'login' ? 'SIGN IN TO WORKBENCH' : 'REGISTER & SIGN IN'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              {isLoading ? 'VERIFYING...' : mode === 'login' ? 'SIGN IN' : 'CREATE PROFILE & SIGN IN'}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
+
       </div>
     </div>
   );

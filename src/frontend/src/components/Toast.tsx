@@ -36,37 +36,41 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Toast Container */}
-      <div className="fixed bottom-5 right-5 z-50 flex flex-col space-y-2.5 max-w-sm w-full pointer-events-none">
+      <div className="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 max-w-sm w-full pointer-events-none font-sans">
         {toasts.map((toast) => {
-          let borderClass = 'border-sky-500/40 bg-slate-900/95 text-sky-300';
+          let borderStyle = 'border-[var(--border-strong)]';
+          let iconColor = 'text-[var(--cyan)]';
           let Icon = Info;
 
           if (toast.type === 'success') {
-            borderClass = 'border-emerald-500/40 bg-slate-900/95 text-emerald-300';
+            borderStyle = 'border-[var(--green)]';
+            iconColor = 'text-[var(--green)]';
             Icon = CheckCircle2;
           } else if (toast.type === 'warning') {
-            borderClass = 'border-amber-500/40 bg-slate-900/95 text-amber-300';
+            borderStyle = 'border-[var(--amber)]';
+            iconColor = 'text-[var(--amber)]';
             Icon = AlertTriangle;
           } else if (toast.type === 'error') {
-            borderClass = 'border-rose-500/40 bg-slate-900/95 text-rose-300';
+            borderStyle = 'border-[var(--red)]';
+            iconColor = 'text-[var(--red)]';
             Icon = AlertTriangle;
           }
 
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto flex items-start space-x-3 p-3.5 rounded-xl border ${borderClass} shadow-xl backdrop-blur-md transition-all duration-200 animate-in fade-in slide-in-from-bottom-3`}
+              className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-lg border ${borderStyle} bg-[var(--surface-2)] shadow-2xl backdrop-blur-md transition-all font-sans`}
             >
-              <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <Icon className={`w-4 h-4 flex-shrink-0 mt-0.5 ${iconColor}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-white leading-tight">{toast.title}</p>
+                <p className="text-xs font-semibold text-[var(--text-primary)] leading-tight">{toast.title}</p>
                 {toast.description && (
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{toast.description}</p>
+                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5 leading-snug">{toast.description}</p>
                 )}
               </div>
               <button
                 onClick={() => removeToast(toast.id)}
-                className="text-slate-400 hover:text-white p-1 rounded transition-colors"
+                className="text-[var(--text-muted)] hover:text-white p-0.5 rounded transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
