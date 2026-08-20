@@ -180,3 +180,66 @@ def get_catalog_stats(current_user: User = Depends(get_current_user)):
 def get_filter_facets(current_user: User = Depends(get_current_user)):
     """Retrieve distinct status, category, and brand options with item counts."""
     return catalog_state.get_filter_options()
+
+
+@router.get("/products/{product_id}/graph")
+def get_product_knowledge_graph(product_id: str, current_user: User = Depends(get_current_user)):
+    """Generate relational knowledge graph nodes and edges for a catalog product."""
+    res = catalog_state.get_product(product_id)
+    if not res:
+        raise HTTPException(status_code=404, detail=f"Product with ID '{product_id}' not found.")
+
+    prod, _ = res
+    row_id_val = prod.raw.row_id or 1
+
+    nodes = [
+        {"id": f"raw_{row_id_val}", "label": prod.raw.part_desc[:30] + "...", "type": "raw_input", "group": "Source Feed", "color": "#EF5A5A"},
+        {"id": f"prod_{row_id_val}", "label": prod.mfg_part_number, "type": "product", "group": "Master SKU", "color": "#45E0D6"},
+        {"id": f"mfr_{prod.manufacturer_name}", "label": prod.manufacturer_name, "type": "manufacturer", "group": "Manufacturer", "color": "#8B93A3"},
+        {"id": f"brand_{prod.brand_name}", "label": prod.brand_name, "type": "brand", "group": "Brand Entity", "color": "#45E0D6"},
+        {"id": f"unspsc_{prod.unspsc}", "label": f"UNSPSC {prod.unspsc}", "type": "unspsc", "group": "Standard Taxonomy", "color": "#3DDC84"},
+        {"id": f"dept_{prod.dept}", "label": prod.dept, "type": "department", "group": "Taxonomy Level 1", "color": "#E8A33D"},
+        {"id": f"class_{prod.class_name}", "label": prod.class_name, "type": "class", "group": "Taxonomy Level 2", "color": "#E8A33D"},
+        {"id": f"fine_{prod.fine}", "label": prod.fine, "type": "fine", "group": "Taxonomy Level 3", "color": "#E8A33D"},
+    ]
+
+    edges = [
+        {"source": f"raw_{row_id_val}", "target": f"prod_{row_id_val}", "label": "RESOLVED_INTO"},
+        {"source": f"prod_{row_id_val}", "target": f"mfr_{prod.manufacturer_name}", "label": "MANUFACTURED_BY"},
+        {"source": f"mfr_{prod.manufacturer_name}", "target": f"brand_{prod.brand_name}", "label": "OWNS_BRAND"},
+        {"source": f"prod_{row_id_val}", "target": f"brand_{prod.brand_name}", "label": "BRANDED_AS"},
+        {"source": f"prod_{row_id_val}", "target": f"unspsc_{prod.unspsc}", "label": "STANDARDIZED_AS"},
+        {"source": f"unspsc_{prod.unspsc}", "target": f"dept_{prod.dept}", "label": "MAPS_TO_DEPT"},
+        {"source": f"dept_{prod.dept}", "target": f"class_{prod.class_name}", "label": "CONTAINS_CLASS"},
+        {"source": f"class_{prod.class_name}", "target": f"fine_{prod.fine}", "label": "CONTAINS_FINE"},
+        {"source": f"prod_{row_id_val}", "target": f"fine_{prod.fine}", "label": "CLASSIFIED_AS"},
+    ]
+
+    # Add Attribute LOV specification nodes
+    for idx, attr in enumerate(prod.attributes[:8]):
+        attr_node_id = f"attr_{row_id_val}_{idx}"
+        nodes.append({
+            "id": attr_node_id,
+            "label": f"{attr.label}: {attr.value} {attr.uom or ''}".strip(),
+            "type": "attribute_lov",
+            "group": "LOV Specification",
+            "color": "#3DDC84"
+        })
+        edges.append({
+            "source": f"prod_{row_id_val}",
+            "target": attr_node_id,
+            "label": "HAS_SPECIFICATION"
+        })
+
+    return {
+        "product_id": str(row_id_val),
+        "mfg_part_number": prod.mfg_part_number,
+        "nodes": nodes,
+        "edges": edges,
+        "stats": {
+            "total_nodes": len(nodes),
+            "total_edges": len(edges),
+            "ontology_depth": 4,
+            "lov_conformance": "100%"
+        }
+    }

@@ -144,6 +144,21 @@ export async function fetchProductDetail(id: string): Promise<ProductDetail> {
   return res.json();
 }
 
+export async function fetchProductKnowledgeGraph(id: string): Promise<{
+  product_id: string;
+  mfg_part_number: string;
+  nodes: Array<{ id: string; label: string; type: string; group: string; color: string }>;
+  edges: Array<{ source: string; target: string; label: string }>;
+  stats: { total_nodes: number; total_edges: number; ontology_depth: number; lov_conformance: string };
+}> {
+  const res = await fetch(`${API_BASE}/products/${encodeURIComponent(id)}/graph`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch knowledge graph: ${res.statusText}`);
+  return res.json();
+}
+
+
 // ============================================================================
 // Playground & Transformation Endpoints
 // ============================================================================

@@ -101,6 +101,14 @@ def run_browser_tests():
                 page.screenshot(path=str(OUTPUT_DIR / "06_inspector_lov_attributes.png"))
                 print("  📸 Captured: 06_inspector_lov_attributes.png")
 
+            graph_tab = page.locator("button:has-text('KNOWLEDGE GRAPH')")
+            if graph_tab.is_visible():
+                graph_tab.click()
+                time.sleep(0.5)
+                page.screenshot(path=str(OUTPUT_DIR / "06b_inspector_knowledge_graph.png"))
+                print("  📸 Captured: 06b_inspector_knowledge_graph.png")
+                assert "CONNECTED ONTOLOGICAL ENTITIES" in page.content(), "Knowledge graph view failed to render"
+
             schema_tab = page.locator("button:has-text('ALL 252 COLUMNS')")
             if schema_tab.is_visible():
                 schema_tab.click()
