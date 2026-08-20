@@ -14,20 +14,91 @@ import {
 
 const API_BASE = '/api';
 
-// In-Memory Token Manager with localStorage sync
-let authToken: string | null = localStorage.getItem('unilog_auth_token');
+// ----------------------------------------------------------------------------
+// Cookie Management Helpers
+// ----------------------------------------------------------------------------
+export function setCookie(name: string, value: string, days: number = 7) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+}
 
-export function setAuthToken(token: string | null) {
+export function getCookie(name: string): string | null {
+  const nameEQ = encodeURIComponent(name) + '=';
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) {
+      return decodeURIComponent(c.substring(nameEQ.length, c.length));
+    }
+  }
+  return null;
+}
+
+export function deleteCookie(name: string) {
+  document.cookie = `${encodeURIComponent(name)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+}
+
+// In-Memory Token & User Profile Manager with localStorage and Cookie sync
+let authToken: string | null = localStorage.getItem('unilog_auth_token') || getCookie('unilog_auth_token');
+
+export function setAuthToken(token: string | null, userProfile?: User | null) {
   authToken = token;
   if (token) {
     localStorage.setItem('unilog_auth_token', token);
+    setCookie('unilog_auth_token', token, 7);
+    if (userProfile) {
+      localStorage.setItem('unilog_user_profile', JSON.stringify(userProfile));
+      setCookie('unilog_user_email', userProfile.email, 7);
+      setCookie('unilog_user_role', userProfile.role, 7);
+      setCookie('unilog_user_name', userProfile.name, 7);
+    }
   } else {
     localStorage.removeItem('unilog_auth_token');
+    localStorage.removeItem('unilog_user_profile');
+    deleteCookie('unilog_auth_token');
+    deleteCookie('unilog_user_email');
+    deleteCookie('unilog_user_role');
+    deleteCookie('unilog_user_name');
   }
 }
 
 export function getAuthToken(): string | null {
-  return authToken || localStorage.getItem('unilog_auth_token');
+  if (authToken) return authToken;
+  const lsToken = localStorage.getItem('unilog_auth_token');
+  if (lsToken) {
+    authToken = lsToken;
+    return lsToken;
+  }
+  const cookieToken = getCookie('unilog_auth_token');
+  if (cookieToken) {
+    authToken = cookieToken;
+    return cookieToken;
+  }
+  return null;
+}
+
+export function getSavedUserProfile(): User | null {
+  try {
+    const raw = localStorage.getItem('unilog_user_profile');
+    if (raw) return JSON.parse(raw);
+    const email = getCookie('unilog_user_email');
+    const role = getCookie('unilog_user_role');
+    const name = getCookie('unilog_user_name');
+    if (email && role && name) {
+      return {
+        id: 'usr_cookie_cached',
+        email,
+        name,
+        role: role as any,
+        avatar_color: '#45E0D6',
+        created_at: Math.floor(Date.now() / 1000)
+      };
+    }
+  } catch (e) {
+    console.error('Failed to parse cached user profile:', e);
+  }
+  return null;
 }
 
 function getAuthHeaders(): Record<string, string> {

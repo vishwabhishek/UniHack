@@ -5,7 +5,8 @@ import {
   registerUser,
   getCurrentUserProfile,
   setAuthToken,
-  getAuthToken
+  getAuthToken,
+  getSavedUserProfile
 } from '../services/api';
 
 interface AuthContextType {
@@ -28,9 +29,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(getSavedUserProfile());
   const [token, setToken] = useState<string | null>(getAuthToken());
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(!getSavedUserProfile() && !!getAuthToken());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -48,9 +49,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const profile = await getCurrentUserProfile();
       setUser(profile);
       setToken(savedToken);
+      setAuthToken(savedToken, profile);
     } catch (e) {
       console.error('Session expired or invalid token:', e);
-      setAuthToken(null);
+      setAuthToken(null, null);
       setUser(null);
       setToken(null);
     } finally {
@@ -64,6 +66,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const res = await loginUser(email, password);
       setUser(res.user);
       setToken(res.token);
+      setAuthToken(res.token, res.user);
       setIsAuthModalOpen(false);
     } finally {
       setIsLoading(false);
@@ -76,6 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const res = await registerUser(email, password, name, role);
       setUser(res.user);
       setToken(res.token);
+      setAuthToken(res.token, res.user);
       setIsAuthModalOpen(false);
     } finally {
       setIsLoading(false);
@@ -83,7 +87,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
-    setAuthToken(null);
+    setAuthToken(null, null);
     setUser(null);
     setToken(null);
   };

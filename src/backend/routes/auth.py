@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from ..auth import (
     User,
@@ -39,7 +39,7 @@ class AuthResponse(BaseModel):
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(payload: LoginRequest, request: Request) -> AuthResponse:
+def login(payload: LoginRequest, request: Request, response: Response) -> AuthResponse:
     """Authenticate with corporate email and password to receive a JWT session token with brute-force rate limiting."""
     client_ip = request.client.host if request.client else "unknown"
     rate_key = f"{client_ip}:{payload.email.lower().strip()}"
@@ -69,6 +69,14 @@ def login(payload: LoginRequest, request: Request) -> AuthResponse:
     )
 
     token = create_access_token(user)
+    response.set_cookie(
+        key="unilog_auth_token",
+        value=token,
+        max_age=604800,  # 7 days
+        path="/",
+        samesite="lax",
+        httponly=False
+    )
     return AuthResponse(
         token=token,
         token_type="Bearer",
@@ -77,7 +85,7 @@ def login(payload: LoginRequest, request: Request) -> AuthResponse:
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest) -> AuthResponse:
+def register(payload: RegisterRequest, response: Response) -> AuthResponse:
     """Register a new enterprise user and issue an initial JWT session token."""
     user = user_store.create_user(
         email=payload.email,
@@ -86,11 +94,20 @@ def register(payload: RegisterRequest) -> AuthResponse:
         role=payload.role,
     )
     token = create_access_token(user)
+    response.set_cookie(
+        key="unilog_auth_token",
+        value=token,
+        max_age=604800,  # 7 days
+        path="/",
+        samesite="lax",
+        httponly=False
+    )
     return AuthResponse(
         token=token,
         token_type="Bearer",
         user=user.to_dict(),
     )
+
 
 
 @router.get("/me", response_model=Dict[str, Any])
