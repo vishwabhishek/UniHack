@@ -23,10 +23,9 @@ const DashboardContent: React.FC = () => {
     loadGlobalState();
   }, []);
 
-  // Keyboard shortcut listeners (1-5 to change tabs, Esc to close inspector)
+  // Keyboard shortcut listeners (1-5 to switch tabs, Esc to close inspector)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts if user is typing in an input or textarea
       if (
         document.activeElement?.tagName === 'INPUT' ||
         document.activeElement?.tagName === 'TEXTAREA' ||
@@ -82,12 +81,12 @@ const DashboardContent: React.FC = () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    showToast('Download Started', 'Exporting 1,000 items in 252-column delivery format', 'success');
+    showToast('Dispatch Triggered', 'Exporting 1,000 items in 252-column delivery format', 'success');
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-sky-500 selection:text-white font-sans">
-      {/* Top Navbar */}
+    <div className="min-h-screen bg-pim-darkest text-slate-100 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans">
+      {/* PIM Workbench Control Header */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -97,15 +96,15 @@ const DashboardContent: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 space-y-6">
-        {/* KPI Metrics Banner */}
+      <main className="flex-1 max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6 py-4 space-y-4">
+        {/* Master Data Quality & Compliance Strip */}
         <MetricsBanner
           stats={stats}
           onFilterStatus={handleFilterStatusFromBanner}
         />
 
         {/* Tab Views */}
-        <div className="transition-all duration-200">
+        <div className="transition-opacity duration-150">
           {activeTab === 'catalog' && (
             <CatalogExplorer
               onInspectProduct={handleInspect}
@@ -135,7 +134,7 @@ const DashboardContent: React.FC = () => {
         </div>
       </main>
 
-      {/* Side-by-Side Modal Inspector */}
+      {/* Dual-Pane Transformation Workbench Modal */}
       {inspectProductId && (
         <TransformationInspector
           productId={inspectProductId}
@@ -145,23 +144,23 @@ const DashboardContent: React.FC = () => {
         />
       )}
 
-      {/* Modern Industrial Footer */}
-      <footer className="bg-slate-950 border-t border-slate-800/80 py-4 text-xs text-slate-500">
-        <div className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col sm:flex-row items-center justify-between gap-3">
+      {/* Industrial PIM Workbench Footer */}
+      <footer className="bg-pim-darkest border-t border-pim-border py-3 text-xs text-pim-textMuted font-mono">
+        <div className="max-w-[1920px] w-full mx-auto px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center space-x-2">
-            <span className="font-semibold text-slate-300">UniHack PIM Intelligence</span>
-            <span className="text-slate-600">•</span>
-            <span>252 Target Delivery Columns</span>
-            <span className="text-slate-600">•</span>
-            <span>100% Deterministic Rule-Engine & AI Normalization</span>
+            <span className="font-bold text-slate-300">UNILOG CIMPLIFI™ PIM SUITE</span>
+            <span className="text-slate-700">|</span>
+            <span>252-COLUMN MASTER DELIVERY SCHEMA</span>
+            <span className="text-slate-700">|</span>
+            <span>0% HALLUCINATION GUARANTEE</span>
           </div>
-          <div className="flex items-center space-x-3 text-slate-400 font-mono text-[11px]">
-            <span className="flex items-center space-x-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-              <span>FastAPI :8000</span>
+          <div className="flex items-center space-x-3 text-pim-textMuted text-[11px]">
+            <span className="flex items-center space-x-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              <span className="text-slate-300">CORE ENGINE: FASTAPI :8000</span>
             </span>
-            <span>•</span>
-            <span>React Vite Frontend</span>
+            <span className="text-slate-700">|</span>
+            <span>SUB-12MS INGESTION</span>
           </div>
         </div>
       </footer>

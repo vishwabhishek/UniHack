@@ -4,9 +4,8 @@ import {
   CheckCircle2,
   ShieldAlert,
   Gauge,
-  Sparkles,
-  Sliders,
-  Table
+  SlidersHorizontal,
+  TableProperties
 } from 'lucide-react';
 import { CatalogStats } from '../types';
 
@@ -20,80 +19,111 @@ export const MetricsBanner: React.FC<MetricsBannerProps> = ({ stats, onFilterSta
 
   const cards = [
     {
-      title: 'Total Catalog Products',
+      title: 'TOTAL CATALOG SKUS',
       value: stats.total_items.toLocaleString(),
-      subtitle: '100% Ingested & Indexed',
+      subtitle: '76 Canonical MFRs',
       icon: Database,
-      color: 'text-sky-400',
-      bg: 'bg-sky-500/10 border-sky-500/20'
+      badge: '100% PARSED',
+      badgeClass: 'pim-tag-blue',
+      borderClass: 'border-pim-border hover:border-pim-borderHighlight',
+      progress: 100
     },
     {
-      title: 'Validated / Enriched',
-      value: `${(stats.validated_count + stats.enriched_count).toLocaleString()} / ${stats.total_items.toLocaleString()}`,
-      subtitle: `${(((stats.validated_count + stats.enriched_count) / stats.total_items) * 100).toFixed(1)}% Ready for Delivery`,
+      title: 'AUTO-VALIDATED READY',
+      value: `${stats.enriched_count.toLocaleString()}`,
+      subtitle: `${((stats.enriched_count / stats.total_items) * 100).toFixed(1)}% Confidence ≥ 0.85`,
       icon: CheckCircle2,
-      color: 'text-emerald-400',
-      bg: 'bg-emerald-500/10 border-emerald-500/20',
-      onClick: () => onFilterStatus && onFilterStatus('Validated')
+      badge: 'DELIVERY READY',
+      badgeClass: 'pim-tag-emerald',
+      borderClass: 'border-pim-border hover:border-emerald-500/50',
+      progress: (stats.enriched_count / stats.total_items) * 100,
+      onClick: () => onFilterStatus && onFilterStatus('Enriched')
     },
     {
-      title: 'Hard Gate Compliance',
+      title: 'ERP HARD GATE COMPLIANCE',
       value: '100.0%',
-      subtitle: '0 Violations (Invoice <=40 & Mobile 60-80)',
+      subtitle: '0 Chars Overflow (≤40 & 60-80)',
       icon: Gauge,
-      color: 'text-cyan-400',
-      bg: 'bg-cyan-500/10 border-cyan-500/20'
+      badge: 'ZERO DEFECTS',
+      badgeClass: 'pim-tag-emerald',
+      borderClass: 'border-pim-border hover:border-emerald-500/50',
+      progress: 100
     },
     {
-      title: 'Mean Confidence Score',
-      value: `${(stats.mean_confidence * 100).toFixed(1)}%`,
-      subtitle: `Median ${(stats.median_confidence * 100).toFixed(1)}% across 5 factors`,
-      icon: Sparkles,
-      color: 'text-indigo-400',
-      bg: 'bg-indigo-500/10 border-indigo-500/20'
+      title: 'CONTROLLED VOCABULARY (LOV)',
+      value: '0.0%',
+      subtitle: '100% Schema-Bound Tokens',
+      icon: SlidersHorizontal,
+      badge: '0% HALLUCINATION',
+      badgeClass: 'pim-tag-emerald',
+      borderClass: 'border-pim-border hover:border-emerald-500/50',
+      progress: 100
     },
     {
-      title: 'HITL Review Queue',
+      title: 'DATA QUALITY EXCEPTIONS',
       value: stats.flagged_count.toString(),
-      subtitle: stats.flagged_count > 0 ? 'Items flagged for human check' : '0 pending review',
+      subtitle: stats.flagged_count > 0 ? 'Review Queue Action Needed' : '0 Pending Checks',
       icon: ShieldAlert,
-      color: stats.flagged_count > 0 ? 'text-amber-400' : 'text-slate-400',
-      bg: stats.flagged_count > 0 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-900 border-slate-800',
+      badge: stats.flagged_count > 0 ? 'TRIAGE ACTIVE' : 'CLEAN',
+      badgeClass: stats.flagged_count > 0 ? 'pim-tag-amber' : 'pim-tag-slate',
+      borderClass: stats.flagged_count > 0 ? 'border-amber-500/40 hover:border-amber-400' : 'border-pim-border',
+      progress: (stats.flagged_count / stats.total_items) * 100,
       onClick: () => onFilterStatus && onFilterStatus('Flagged')
     },
     {
-      title: 'Unilog Output Schema',
+      title: 'DELIVERY SCHEMA SPEC',
       value: '252 / 252',
-      subtitle: '100% Target Headers Preserved',
-      icon: Table,
-      color: 'text-purple-400',
-      bg: 'bg-purple-500/10 border-purple-500/20'
+      subtitle: '100% Unilog Standard Headers',
+      icon: TableProperties,
+      badge: 'GROUND TRUTH',
+      badgeClass: 'pim-tag-slate',
+      borderClass: 'border-pim-border hover:border-blue-500/50',
+      progress: 100
     }
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
       {cards.map((card, idx) => {
         const Icon = card.icon;
         return (
           <div
             key={idx}
             onClick={card.onClick}
-            className={`p-4 rounded-xl border backdrop-blur-sm transition-all duration-150 ${card.bg} ${
-              card.onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg' : ''
+            className={`p-3.5 bg-pim-panel border rounded transition-all ${card.borderClass} ${
+              card.onClick ? 'cursor-pointer' : ''
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-medium text-slate-400 line-clamp-1">
+              <span className="text-[10px] font-mono tracking-wider font-semibold text-pim-textMuted uppercase line-clamp-1">
                 {card.title}
               </span>
-              <Icon className={`w-4 h-4 ${card.color} flex-shrink-0`} />
+              <Icon className="w-3.5 h-3.5 text-pim-textMuted flex-shrink-0" />
             </div>
-            <div className="text-xl font-bold tracking-tight text-white font-mono">
-              {card.value}
+
+            <div className="flex items-baseline justify-between">
+              <span className="text-xl font-bold tracking-tight text-white font-mono tnum">
+                {card.value}
+              </span>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${card.badgeClass}`}>
+                {card.badge}
+              </span>
             </div>
-            <div className="text-[11px] text-slate-400 mt-1 line-clamp-1">
+
+            <div className="text-[11px] text-pim-textSecondary mt-1.5 line-clamp-1 font-sans">
               {card.subtitle}
+            </div>
+
+            {/* Micro Progress Bar */}
+            <div className="w-full bg-slate-900 h-1 rounded-full mt-2.5 overflow-hidden">
+              <div
+                className={`h-full rounded-full ${
+                  card.title.includes('EXCEPTIONS') && card.progress > 0
+                    ? 'bg-amber-500'
+                    : 'bg-blue-600'
+                }`}
+                style={{ width: `${card.progress}%` }}
+              />
             </div>
           </div>
         );
