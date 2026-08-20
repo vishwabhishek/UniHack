@@ -19,15 +19,13 @@ interface NavbarProps {
   setActiveTab: (tab: string) => void;
   stats: CatalogStats | null;
   reviewCount: number;
-  onQuickExport: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   stats,
-  reviewCount,
-  onQuickExport
+  reviewCount
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -139,21 +137,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Primary Quick Dispatch */}
-          <div className="flex items-center space-x-2 flex-shrink-0">
-            <button
-              onClick={onQuickExport}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-bold font-mono shadow-glow-blue transition-all border border-cyan-400/40 hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">EXPORT 252-COL CSV</span>
-              <span className="sm:hidden">EXPORT</span>
-            </button>
-
-            {/* Mobile Drawer Button */}
+          {/* Mobile Drawer Button */}
+          <div className="flex md:hidden items-center space-x-2 flex-shrink-0">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
+              className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
               aria-label="Toggle navigation"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}

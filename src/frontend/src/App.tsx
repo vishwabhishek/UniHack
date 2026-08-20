@@ -8,7 +8,7 @@ import { ReviewQueue } from './components/ReviewQueue';
 import { BenchmarkDashboard } from './components/BenchmarkDashboard';
 import { DeliveryExporter } from './components/DeliveryExporter';
 import { ToastProvider, useToast } from './components/Toast';
-import { fetchStats, fetchReviewQueue, getExportCsvUrl } from './services/api';
+import { fetchStats, fetchReviewQueue } from './services/api';
 import { CatalogStats } from './types';
 
 const DashboardContent: React.FC = () => {
@@ -73,17 +73,6 @@ const DashboardContent: React.FC = () => {
     }
   };
 
-  const handleQuickExport = () => {
-    const url = getExportCsvUrl();
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'unilog_enriched_catalog_252_columns.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showToast('Dispatch Triggered', 'Exporting 1,000 items in 252-column delivery format', 'success');
-  };
-
   return (
     <div className="min-h-screen bg-[#080C14] text-slate-100 flex flex-col antialiased selection:bg-cyan-500 selection:text-white font-sans relative overflow-x-hidden">
       {/* Background Ambient Radial Light Cones */}
@@ -100,7 +89,6 @@ const DashboardContent: React.FC = () => {
           setActiveTab={setActiveTab}
           stats={stats}
           reviewCount={reviewCount}
-          onQuickExport={handleQuickExport}
         />
       </div>
 
