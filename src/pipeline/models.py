@@ -18,18 +18,135 @@ class RawProduct(BaseModel):
 
 
 from datetime import datetime, timezone
+from enum import Enum
+
+
+class SourceType(str, Enum):
+    MANUFACTURER_PAGE = "manufacturer_page"
+    MANUFACTURER_PDF = "manufacturer_pdf"
+    SUPPLIER_INPUT = "supplier_input"
+    REFERENCE_DICTIONARY = "reference_dictionary"
+    MANUAL_REVIEW = "manual_review"
+
+
+class ExtractionMethod(str, Enum):
+    DETERMINISTIC_RULE = "deterministic_rule"
+    DOCUMENT_PARSER = "document_parser"
+    GEMINI_STRUCTURED_EXTRACTION = "gemini_structured_extraction"
+    MANUAL_REVIEW = "manual_review"
+
+
+class VerificationStatus(str, Enum):
+    VERIFIED = "verified"
+    CANDIDATE = "candidate"
+    REJECTED = "rejected"
+    MISSING_EVIDENCE = "missing_evidence"
+
+
+class EvidenceRecord(BaseModel):
+    """Granular evidence record representing a verified data point, extraction artifact, or audit observation."""
+    field_name: str
+    candidate_value: Optional[str] = ""
+    normalized_value: Optional[str] = ""
+    source_url: Optional[str] = None
+    source_type: str = SourceType.SUPPLIER_INPUT.value
+    source_title: Optional[str] = None
+    source_page_or_section: Optional[str] = None
+    evidence_excerpt: Optional[str] = None
+    extraction_method: str = ExtractionMethod.DETERMINISTIC_RULE.value
+    retrieved_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    confidence: float = 1.0
+    verification_status: str = VerificationStatus.CANDIDATE.value
+    dictionary_identity: Optional[str] = None
+    model_name: Optional[str] = None
+    prompt_version: Optional[str] = None
+    source_hash: Optional[str] = None
+    conflicts: List[str] = Field(default_factory=list)
+    extraction_reason: Optional[str] = None
+    unresolved_reason: Optional[str] = None
+    ai_extraction_unavailable: bool = False
+
+
+class ProductProvenanceSummary(BaseModel):
+    """Aggregated product-level provenance health and evidence verification statistics."""
+    total_fields_tracked: int = 0
+    verified_fields_count: int = 0
+    candidate_fields_count: int = 0
+    missing_evidence_count: int = 0
+    rejected_fields_count: int = 0
+    verification_score: float = 0.0
+    primary_sources_breakdown: Dict[str, int] = Field(default_factory=dict)
+
+
+class TaxonomyCandidate(BaseModel):
+    """Ranked taxonomy candidate classification with transparent score and evidence."""
+    classpath: str
+    unspsc: str
+    dept: str
+    class_name: str
+    fine: str
+    product_name: str
+    matching_terms: List[str] = Field(default_factory=list)
+    score: float = 0.0
+    source_evidence: str = ""
+    rule_confidence: float = 1.0
+    evidence_confidence: float = 0.5
+    tie_break_reason: Optional[str] = None
+
+
+class TaxonomyExplanation(BaseModel):
+    """Explainable classification decision with candidate rankings and routing."""
+    selected_classpath: str
+    selected_unspsc: str
+    is_ambiguous: bool = False
+    is_fallback: bool = False
+    top_candidates: List[TaxonomyCandidate] = Field(default_factory=list)
+    rationale: str = ""
+    routing_decision: str = "AUTO_APPROVED"  # AUTO_APPROVED | ROUTED_TO_HUMAN_REVIEW
+
+
+class AuditRecord(BaseModel):
+    """Immutable audit log recording reviewer, timestamp, field, previous value, new value, and reason."""
+    id: str = Field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")[:17])
+    field_name: str
+    reviewer: str
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    previous_value: Optional[str] = ""
+    new_value: Optional[str] = ""
+    action: str = "edit"  # edit | approve | reject | mark_unknown
+    reason: str = ""
+
+
+class FieldReviewItem(BaseModel):
+    """Field-level evidence review data model for HITL curation."""
+    field_name: str
+    display_label: str
+    raw_supplier_input: Optional[str] = ""
+    candidate_value: Optional[str] = ""
+    normalized_value: Optional[str] = ""
+    source_citation: Optional[str] = ""
+    source_excerpt: Optional[str] = ""
+    source_url: Optional[str] = None
+    source_type: str = "supplier_input"
+    confidence: float = 1.0
+    validation_flags: List[str] = Field(default_factory=list)
+    verification_status: str = "candidate"  # verified | candidate | rejected | unknown | missing_evidence
+    dictionary_identity: Optional[str] = None
+    is_high_risk: bool = False
+    is_resolved: bool = False
+    audit_history: List[AuditRecord] = Field(default_factory=list)
 
 
 class FieldProvenance(BaseModel):
-    """Traceable provenance and evidence lineage for an enriched field."""
+    """Traceable provenance and evidence lineage for backward compatibility."""
     field_name: str
     source_url: Optional[str] = None
-    source_type: str = "raw_input"  # raw_input | canonical_dictionary | manufacturer_doc | rule_engine | human_curated | unverified
-    extraction_method: str = "deterministic_regex"  # deterministic_regex | entity_lookup | uom_converter | lov_graph | formula_builder | manual_override
+    source_type: str = "supplier_input"
+    extraction_method: str = "deterministic_rule"
     section_or_rule: Optional[str] = None
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     confidence: float = 1.0
-    verified: bool = True
+    verified: bool = False
 
 
 class AttributeTriple(BaseModel):
@@ -38,6 +155,7 @@ class AttributeTriple(BaseModel):
     value: str = ""
     uom: Optional[str] = ""
     provenance: Optional[FieldProvenance] = None
+    evidence_records: List[EvidenceRecord] = Field(default_factory=list)
 
 
 class PhysicalDimensions(BaseModel):
@@ -56,7 +174,9 @@ class PhysicalDimensions(BaseModel):
 
 class EnrichedProduct(BaseModel):
     """Comprehensive 252-column standard enriched product entity."""
-    # Field-level traceable provenance dictionary
+    # Field-level traceable evidence and provenance
+    field_evidence: Dict[str, List[EvidenceRecord]] = Field(default_factory=dict)
+    provenance_summary: Optional[ProductProvenanceSummary] = None
     field_provenance: Dict[str, FieldProvenance] = Field(default_factory=dict)
     # Core Identifiers
     part_number: str = ""
@@ -84,6 +204,8 @@ class EnrichedProduct(BaseModel):
     # Taxonomy
     classpath: str = ""
     product_name: str = ""
+    taxonomy_candidates: List[TaxonomyCandidate] = Field(default_factory=list)
+    taxonomy_explanation: Optional[TaxonomyExplanation] = None
     
     # 5-Tier Descriptions
     invoice_desc: str = ""  # Strictly <= 40 chars, ALL CAPS
@@ -127,6 +249,7 @@ class EnrichedProduct(BaseModel):
     confidence_breakdown: Dict[str, float] = Field(default_factory=dict)
     validation_flags: List[str] = Field(default_factory=list)
     status: str = "Enriched"  # Draft | Enriched | Validated | Flagged
+    audit_trail: List[AuditRecord] = Field(default_factory=list)
 
     @field_validator("invoice_desc")
     @classmethod

@@ -15,7 +15,11 @@ from ..schemas import (
     CatalogStatsResponse,
     FilterOptionsResponse,
     AttributeTripleSchema,
-    PhysicalDimensionsSchema
+    PhysicalDimensionsSchema,
+    EvidenceRecordSchema,
+    ProductProvenanceSummarySchema,
+    TaxonomyCandidateSchema,
+    TaxonomyExplanationSchema
 )
 
 router = APIRouter(prefix="/api", tags=["Catalog"])
@@ -96,9 +100,31 @@ def get_product_detail(product_id: str, current_user: User = Depends(get_current
     prod, deliv_dict = res
     row_id_val = prod.raw.row_id or 1
 
-    # Convert attribute triples
+    # Convert attribute triples with evidence records
     attr_schemas = [
-        AttributeTripleSchema(label=a.label, value=a.value, uom=a.uom or "")
+        AttributeTripleSchema(
+            label=a.label,
+            value=a.value,
+            uom=a.uom or "",
+            evidence_records=[
+                EvidenceRecordSchema(
+                    field_name=ev.field_name,
+                    candidate_value=ev.candidate_value,
+                    normalized_value=ev.normalized_value,
+                    source_url=ev.source_url,
+                    source_type=ev.source_type,
+                    source_title=ev.source_title,
+                    source_page_or_section=ev.source_page_or_section,
+                    evidence_excerpt=ev.evidence_excerpt,
+                    extraction_method=ev.extraction_method,
+                    retrieved_at=ev.retrieved_at,
+                    confidence=ev.confidence,
+                    verification_status=ev.verification_status,
+                    dictionary_identity=ev.dictionary_identity
+                )
+                for ev in getattr(a, "evidence_records", [])
+            ]
+        )
         for a in prod.attributes
     ]
 
@@ -115,6 +141,76 @@ def get_product_detail(product_id: str, current_user: User = Depends(get_current
         volume=prod.dimensions.volume,
         volume_uom=prod.dimensions.volume_uom
     )
+
+    # Convert field_evidence dictionary
+    ev_dict = {}
+    if hasattr(prod, "field_evidence") and prod.field_evidence:
+        for fname, records in prod.field_evidence.items():
+            ev_dict[fname] = [
+                EvidenceRecordSchema(
+                    field_name=r.field_name,
+                    candidate_value=r.candidate_value,
+                    normalized_value=r.normalized_value,
+                    source_url=r.source_url,
+                    source_type=r.source_type,
+                    source_title=r.source_title,
+                    source_page_or_section=r.source_page_or_section,
+                    evidence_excerpt=r.evidence_excerpt,
+                    extraction_method=r.extraction_method,
+                    retrieved_at=r.retrieved_at,
+                    confidence=r.confidence,
+                    verification_status=r.verification_status,
+                    dictionary_identity=r.dictionary_identity
+                )
+                for r in records
+            ]
+
+    prov_sum_schema = None
+    if hasattr(prod, "provenance_summary") and prod.provenance_summary:
+        ps = prod.provenance_summary
+        prov_sum_schema = ProductProvenanceSummarySchema(
+            total_fields_tracked=ps.total_fields_tracked,
+            verified_fields_count=ps.verified_fields_count,
+            candidate_fields_count=ps.candidate_fields_count,
+            missing_evidence_count=ps.missing_evidence_count,
+            rejected_fields_count=ps.rejected_fields_count,
+            verification_score=ps.verification_score,
+            primary_sources_breakdown=ps.primary_sources_breakdown
+        )
+
+    # Convert taxonomy candidates and explanation
+    tax_candidates = []
+    if hasattr(prod, "taxonomy_candidates") and prod.taxonomy_candidates:
+        for c in prod.taxonomy_candidates:
+            tax_candidates.append(
+                TaxonomyCandidateSchema(
+                    classpath=c.classpath,
+                    unspsc=c.unspsc,
+                    dept=c.dept,
+                    class_name=c.class_name,
+                    fine=c.fine,
+                    product_name=c.product_name,
+                    matching_terms=c.matching_terms,
+                    score=c.score,
+                    source_evidence=c.source_evidence,
+                    rule_confidence=c.rule_confidence,
+                    evidence_confidence=c.evidence_confidence,
+                    tie_break_reason=c.tie_break_reason
+                )
+            )
+
+    tax_explanation_schema = None
+    if hasattr(prod, "taxonomy_explanation") and prod.taxonomy_explanation:
+        te = prod.taxonomy_explanation
+        tax_explanation_schema = TaxonomyExplanationSchema(
+            selected_classpath=te.selected_classpath,
+            selected_unspsc=te.selected_unspsc,
+            is_ambiguous=te.is_ambiguous,
+            is_fallback=te.is_fallback,
+            top_candidates=tax_candidates,
+            rationale=te.rationale,
+            routing_decision=te.routing_decision
+        )
 
     return ProductDetailResponse(
         id=str(row_id_val),
@@ -138,6 +234,8 @@ def get_product_detail(product_id: str, current_user: User = Depends(get_current
         ref_urls=prod.ref_urls or [],
         classpath=prod.classpath,
         product_name=prod.product_name,
+        taxonomy_candidates=tax_candidates,
+        taxonomy_explanation=tax_explanation_schema,
         invoice_desc=prod.invoice_desc,
         invoice_desc_len=len(prod.invoice_desc),
         mobile_desc=prod.mobile_desc,
@@ -166,6 +264,8 @@ def get_product_detail(product_id: str, current_user: User = Depends(get_current
         confidence_score=prod.confidence_score,
         confidence_breakdown=prod.confidence_breakdown,
         validation_flags=prod.validation_flags,
+        field_evidence=ev_dict,
+        provenance_summary=prov_sum_schema,
         field_provenance={k: (v.model_dump() if hasattr(v, "model_dump") else v) for k, v in prod.field_provenance.items()},
         status=prod.status,
         delivery_columns=deliv_dict

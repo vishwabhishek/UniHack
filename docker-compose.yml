@@ -10,10 +10,18 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - APP_ENV=production
+      - ENVIRONMENT=production
       - HOST=0.0.0.0
       - PORT=8000
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      - ADMIN_INITIAL_EMAIL=${ADMIN_INITIAL_EMAIL:?ADMIN_INITIAL_EMAIL must be set}
+      - ADMIN_INITIAL_PASSWORD=${ADMIN_INITIAL_PASSWORD:?ADMIN_INITIAL_PASSWORD must be set}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_ENABLED=${GEMINI_ENABLED:-false}
     volumes:
+      - ./data/unilog_pim.db:/app/data/unilog_pim.db
+      - ./data/evidence:/app/data/evidence
+      - ./data/cache:/app/data/cache
       - ./data/output:/app/data/output
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]

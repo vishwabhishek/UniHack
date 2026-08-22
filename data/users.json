@@ -1,0 +1,128 @@
+[
+  {
+    "id": "usr_0444698a",
+    "email": "admin@unilog.com",
+    "name": "System Administrator",
+    "password_hash": "pbkdf2:sha256:100000$b95d6c7c54a873de19c2ce299730af26$72e8a5d6f2120564eb87e82883c4fff35832aa70ab5c1a79dfd11edea71eb505",
+    "role": "admin",
+    "created_at": 1787320380.8724163,
+    "avatar_color": "from-cyan-500 to-blue-600"
+  },
+  {
+    "id": "usr_b57af0a2",
+    "email": "specialist@unilog.com",
+    "name": "Data Specialist",
+    "password_hash": "pbkdf2:sha256:100000$e45835ada5a39868a2efe2a8b4ada18f$d2b72868a6e0ab1a95e3d70adb5c7c7df7bbccc596fab93c2d16fe331caae0bf",
+    "role": "specialist",
+    "created_at": 1787320380.8963833,
+    "avatar_color": "from-blue-500 to-indigo-600"
+  },
+  {
+    "id": "usr_8a9c862b",
+    "email": "reviewer@unilog.com",
+    "name": "Catalog Reviewer",
+    "password_hash": "pbkdf2:sha256:100000$53363af1136cf366d58b08d875eec36a$34c872c7ece266fc116f948fbb554a9c12960d574eeb3e69e76623cdac8c420c",
+    "role": "reviewer",
+    "created_at": 1787320380.9197297,
+    "avatar_color": "from-emerald-500 to-teal-600"
+  },
+  {
+    "id": "usr_8df088be",
+    "email": "viewer@unilog.com",
+    "name": "Executive Viewer",
+    "password_hash": "pbkdf2:sha256:100000$6db119fd2a47ed37de4c43d5351b2eda$8e0c86f10250e2241f2c324d3577b71d149740375a3a4e61486b5d6f6d1d387f",
+    "role": "viewer",
+    "created_at": 1787320380.941631,
+    "avatar_color": "from-slate-500 to-zinc-600"
+  },
+  {
+    "id": "usr_9010740d",
+    "email": "john@distributor.com",
+    "name": "John Doe",
+    "password_hash": "pbkdf2:sha256:100000$c70a306db2fd0608fc3238817dd38a97$d5bdc4076c92a5560ae94021ad91a9996d8b73db0acfbc38ecf4d6cc250f1e1c",
+    "role": "reviewer",
+    "created_at": 1787320392.00814,
+    "avatar_color": "from-emerald-500 to-teal-600"
+  },
+  {
+    "id": "usr_2a00f00f",
+    "email": "pentest_viewer@unilog.com",
+    "name": "Pentest Viewer",
+    "password_hash": "pbkdf2:sha256:100000$f6d39dc81cd71298c71d600ba619a690$e3c2893b88041fdfae0e8a795f0c37903580a04b9920e32cabe9915486527e93",
+    "role": "viewer",
+    "created_at": 1787320407.6857252,
+    "avatar_color": "from-slate-500 to-zinc-600"
+  },
+  {
+    "id": "usr_88e6e627",
+    "email": "new_specialist_test@unilog.com",
+    "name": "Jane Developer",
+    "password_hash": "pbkdf2:sha256:100000$7905cd2a057d6d28366fc58296599551$f42cbeb5800b304d8246fc7e91d1f9a0f83afedd0040c458004eadd3fcb273bb",
+    "role": "specialist",
+    "created_at": 1787320414.992489,
+    "avatar_color": "from-blue-500 to-indigo-600"
+  },
+  {
+    "id": "usr_c19f5a12",
+    "email": "auditor_viewer@unilog.com",
+    "name": "Elena Auditor",
+    "password_hash": "pbkdf2:sha256:100000$e353a26d0f7f8320179f387af989719e$fd7f843f7efe9e865ecd9ac26b79e7b6d1bccbcc823ace0b85f063d12114f0bc",
+    "role": "viewer",
+    "created_at": 1787320415.0846217,
+    "avatar_color": "from-slate-500 to-zinc-600"
+  },
+  {
+    "id": "usr_5c05d6e5",
+    "email": "specialist_5be77c@unilog.com",
+    "name": "Jane Developer",
+    "password_hash": "pbkdf2:sha256:100000$a9b881fdd77d122f17ab877a9e25a242$a33fa765490ca46dacacb2a06363a0292e47700e621689e7da9c7c0e0708657f",
+    "role": "specialist",
+    "created_at": 1787322093.5197935,
+    "avatar_color": "from-blue-500 to-indigo-600"
+  },
+  {
+    "id": "usr_4cfed387",
+    "email": "specialist_6293db@unilog.com",
+    "name": "Jane Developer",
+    "password_hash": "pbkdf2:sha256:100000$613d998f4fd8b84734f1f69116ed4ec8$3b17b54cd9524e1b6e335d96902bce3dbe1e2b3e4c1dc6fd32de5ad0ba54baf9",
+    "role": "specialist",
+    "created_at": 1787322165.1472788,
+    "avatar_color": "from-blue-500 to-indigo-600"
+  },
+  {
+    "id": "usr_9215d9d2",
+    "email": "specialist_fb1f77@unilog.com",
+    "name": "Jane Developer",
+    "password_hash": "pbkdf2:sha256:100000$066435d9f3b10381348b13b60bd6bf69$270d4dffc9797f2f05ce1189ec9a5abb86dc2bdf77285d036a601680ba717f2c",
+    "role": "specialist",
+    "created_at": 1787332780.6160827,
+    "avatar_color": "from-blue-500 to-indigo-600"
+  },
+  {
+    "id": "usr_df59c447",
+    "email": "specialist_9aa05d@unilog.com",
+    "name": "Jane Developer",
+    "password_hash": "pbkdf2:sha256:100000$552002d89acf104edece7f31bbd89807$54617b5cf59e44fa32e05be0c08adc0b6b50d1ee774421a7e0f74ae9f4da25d9",
+    "role": "specialist",
+    "created_at": 1787369460.3811748,
+    "avatar_color": "from-blue-500 to-indigo-600"
+  },
+  {
+    "id": "usr_dcbb05d7",
+    "email": "specialist_9ee93a@unilog.com",
+    "name": "Jane Developer",
+    "password_hash": "pbkdf2:sha256:100000$4c7e548da37fff8ad6c9351bb042ccd9$0fe31277bfd45c59f339013cbcc3caee68823c974bd8c9d1c1fe23cf797bf71f",
+    "role": "specialist",
+    "created_at": 1787369790.644022,
+    "avatar_color": "from-blue-500 to-indigo-600"
+  },
+  {
+    "id": "usr_70c05d2a",
+    "email": "specialist_8ded44@unilog.com",
+    "name": "Jane Developer",
+    "password_hash": "pbkdf2:sha256:100000$e977e57a806b83ac876ba74816c26885$56dfba949074c6b0ac8b900654b5388bfd61004dd2994a42b44e40becc6d7b03",
+    "role": "specialist",
+    "created_at": 1787370199.8764238,
+    "avatar_color": "from-blue-500 to-indigo-600"
+  }
+]

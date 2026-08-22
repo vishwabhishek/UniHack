@@ -50,12 +50,14 @@ def test_auth_me_endpoint_with_valid_token():
 
 
 def test_auth_me_endpoint_unauthorized():
+    client.cookies.clear()
     res = client.get("/api/auth/me")
     assert res.status_code == 401
 
 
 def test_auth_register_and_login_new_user():
-    email = "new_specialist_test@unilog.com"
+    import uuid
+    email = f"specialist_{uuid.uuid4().hex[:6]}@unilog.com"
     register_payload = {
         "email": email,
         "password": "SecurePassword2026!",

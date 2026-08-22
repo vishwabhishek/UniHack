@@ -1,0 +1,82 @@
+[
+  {
+    "chunk_id": "chk_pdsh4816af_1_dd5c96d1",
+    "source_id": "src_pdsh4816af_0fda3172",
+    "mpn": "PDSH4816AF",
+    "brand": "FRIGIDAIRE\u00ae",
+    "manufacturer": "Electrolux Home Products, Inc.",
+    "section_title": "General Specifications",
+    "page_number": 1,
+    "text_content": "Installation Type: Built-In\nControl Type: Top Control Digital Touch\nTub Material: Stainless Steel\nPlace Setting Capacity: 14",
+    "key_value_specs": {
+      "Installation Type": "Built-In",
+      "Control Type": "Top Control Digital Touch",
+      "Tub Material": "Stainless Steel",
+      "Place Setting Capacity": "14"
+    },
+    "chunk_hash": "dd5c96d19906db77"
+  },
+  {
+    "chunk_id": "chk_pdsh4816af_2_784e950b",
+    "source_id": "src_pdsh4816af_0fda3172",
+    "mpn": "PDSH4816AF",
+    "brand": "FRIGIDAIRE\u00ae",
+    "manufacturer": "Electrolux Home Products, Inc.",
+    "section_title": "Electrical Specifications",
+    "page_number": 1,
+    "text_content": "Voltage Rating: 120 V\nAmps @ 120V: 15 A\nConnected Load (kW Rating) @ 120V: 1.44 kW\nCircuit Required: 15 A Dedicated",
+    "key_value_specs": {
+      "Voltage Rating": "120 V",
+      "Amps @ 120V": "15 A",
+      "Connected Load (kW Rating) @ 120V": "1.44 kW",
+      "Circuit Required": "15 A Dedicated"
+    },
+    "chunk_hash": "784e950b907f6b1f"
+  },
+  {
+    "chunk_id": "chk_pdsh4816af_3_8dc142e5",
+    "source_id": "src_pdsh4816af_0fda3172",
+    "mpn": "PDSH4816AF",
+    "brand": "FRIGIDAIRE\u00ae",
+    "manufacturer": "Electrolux Home Products, Inc.",
+    "section_title": "Performance & Noise Level",
+    "page_number": 1,
+    "text_content": "Sound Level: 47 dBA\nWash Cycles: 5\nWash System: Dual OrbitClean\u00ae Wash System\nDrying System: MaxBoost\u2122 Dry\nEnergy Star Qualified: Yes",
+    "key_value_specs": {
+      "Sound Level": "47 dBA",
+      "Wash Cycles": "5",
+      "Wash System": "Dual OrbitClean\u00ae Wash System",
+      "Drying System": "MaxBoost\u2122 Dry",
+      "Energy Star Qualified": "Yes"
+    },
+    "chunk_hash": "8dc142e59b6fd5c8"
+  },
+  {
+    "chunk_id": "chk_pdsh4816af_4_965191e1",
+    "source_id": "src_pdsh4816af_0fda3172",
+    "mpn": "PDSH4816AF",
+    "brand": "FRIGIDAIRE\u00ae",
+    "manufacturer": "Electrolux Home Products, Inc.",
+    "section_title": "Dimensions & Dimensions UOM",
+    "page_number": 1,
+    "text_content": "Overall Width: 24 in\nOverall Height: 33-1/2 in - 35 in\nOverall Depth: 25 in",
+    "key_value_specs": {
+      "Overall Width": "24 in",
+      "Overall Height": "33-1/2 in - 35 in",
+      "Overall Depth": "25 in"
+    },
+    "chunk_hash": "965191e171c8ac12"
+  },
+  {
+    "chunk_id": "chk_pdsh4816af_5_2eabca15",
+    "source_id": "src_pdsh4816af_0fda3172",
+    "mpn": "PDSH4816AF",
+    "brand": "FRIGIDAIRE\u00ae",
+    "manufacturer": "Electrolux Home Products, Inc.",
+    "section_title": "Warranty Information",
+    "page_number": 1,
+    "text_content": "1 Year Limited Manufacturer Warranty covering parts and labor.",
+    "key_value_specs": {},
+    "chunk_hash": "2eabca150c6d281f"
+  }
+]

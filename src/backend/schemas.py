@@ -21,11 +21,40 @@ class RawProductSchema(BaseModel):
     row_id: Optional[int] = None
 
 
+class EvidenceRecordSchema(BaseModel):
+    """Granular evidence record representing a data point, extraction artifact, or audit observation."""
+    field_name: str
+    candidate_value: Optional[str] = ""
+    normalized_value: Optional[str] = ""
+    source_url: Optional[str] = None
+    source_type: str = "supplier_input"
+    source_title: Optional[str] = None
+    source_page_or_section: Optional[str] = None
+    evidence_excerpt: Optional[str] = None
+    extraction_method: str = "deterministic_rule"
+    retrieved_at: str
+    confidence: float = 1.0
+    verification_status: str = "candidate"
+    dictionary_identity: Optional[str] = None
+
+
+class ProductProvenanceSummarySchema(BaseModel):
+    """Product-level summary of evidence provenance and verification metrics."""
+    total_fields_tracked: int = 0
+    verified_fields_count: int = 0
+    candidate_fields_count: int = 0
+    missing_evidence_count: int = 0
+    rejected_fields_count: int = 0
+    verification_score: float = 0.0
+    primary_sources_breakdown: Dict[str, int] = Field(default_factory=dict)
+
+
 class AttributeTripleSchema(BaseModel):
     """Normalized technical specification slot triple (Label, Value, UOM)."""
     label: str = ""
     value: str = ""
     uom: Optional[str] = ""
+    evidence_records: List[EvidenceRecordSchema] = Field(default_factory=list)
 
 
 class PhysicalDimensionsSchema(BaseModel):
@@ -73,6 +102,33 @@ class ProductListResponse(BaseModel):
     total_pages: int
 
 
+class TaxonomyCandidateSchema(BaseModel):
+    """Ranked taxonomy candidate classification with transparent score and evidence."""
+    classpath: str
+    unspsc: str
+    dept: str
+    class_name: str
+    fine: str
+    product_name: str
+    matching_terms: List[str] = Field(default_factory=list)
+    score: float = 0.0
+    source_evidence: str = ""
+    rule_confidence: float = 1.0
+    evidence_confidence: float = 0.5
+    tie_break_reason: Optional[str] = None
+
+
+class TaxonomyExplanationSchema(BaseModel):
+    """Explainable classification decision with candidate rankings and routing."""
+    selected_classpath: str
+    selected_unspsc: str
+    is_ambiguous: bool = False
+    is_fallback: bool = False
+    top_candidates: List[TaxonomyCandidateSchema] = Field(default_factory=list)
+    rationale: str = ""
+    routing_decision: str = "AUTO_APPROVED"
+
+
 class ProductDetailResponse(BaseModel):
     """Complete 252-column product detail entity."""
     id: str
@@ -102,6 +158,8 @@ class ProductDetailResponse(BaseModel):
     # Taxonomy
     classpath: str
     product_name: str
+    taxonomy_candidates: List[TaxonomyCandidateSchema] = Field(default_factory=list)
+    taxonomy_explanation: Optional[TaxonomyExplanationSchema] = None
     
     # 5-Tier Descriptions
     invoice_desc: str
@@ -142,10 +200,12 @@ class ProductDetailResponse(BaseModel):
     actual_image: Optional[str] = "No"
     documents: Dict[str, str] = Field(default_factory=dict)
     
-    # Quality, Confidence & Provenance
+    # Quality, Confidence, Evidence & Provenance
     confidence_score: float
     confidence_breakdown: Dict[str, float] = Field(default_factory=dict)
     validation_flags: List[str] = Field(default_factory=list)
+    field_evidence: Dict[str, List[EvidenceRecordSchema]] = Field(default_factory=dict)
+    provenance_summary: Optional[ProductProvenanceSummarySchema] = None
     field_provenance: Dict[str, Any] = Field(default_factory=dict)
     status: str
     
@@ -158,7 +218,7 @@ class ProductDetailResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class CatalogStatsResponse(BaseModel):
-    """Overall catalog health, KPI counts, and compliance rates."""
+    """Overall catalog health, KPI counts, compliance rates, and evidence coverage."""
     total_items: int
     enriched_count: int
     validated_count: int
@@ -173,6 +233,10 @@ class CatalogStatsResponse(BaseModel):
     status_counts: Dict[str, int]
     dept_counts: Dict[str, int]
     top_brands: Dict[str, int]
+    sources_registered_count: int = 0
+    verified_fields_count: int = 0
+    candidate_fields_count: int = 0
+    unsupported_fields_withheld: int = 0
 
 
 class FilterOptionsResponse(BaseModel):
@@ -278,6 +342,7 @@ class ReviewItem(BaseModel):
     anomaly_flags: List[str]
     raw_part_desc: str
     raw_manufacturer: str
+    provenance_summary: Optional[ProductProvenanceSummarySchema] = None
 
 
 class ReviewQueueResponse(BaseModel):
@@ -316,6 +381,71 @@ class ApprovalResponse(BaseModel):
     status: str
     id: str
     message: str
+
+
+class AuditRecordSchema(BaseModel):
+    """Immutable audit trail entry."""
+    id: str
+    field_name: str
+    reviewer: str
+    timestamp: str
+    previous_value: Optional[str] = ""
+    new_value: Optional[str] = ""
+    action: str
+    reason: str
+
+
+class FieldReviewItemSchema(BaseModel):
+    """Field-level evidence review representation."""
+    field_name: str
+    display_label: str
+    raw_supplier_input: Optional[str] = ""
+    candidate_value: Optional[str] = ""
+    normalized_value: Optional[str] = ""
+    source_citation: Optional[str] = ""
+    source_excerpt: Optional[str] = ""
+    source_url: Optional[str] = None
+    source_type: str = "supplier_input"
+    confidence: float = 1.0
+    validation_flags: List[str] = Field(default_factory=list)
+    verification_status: str = "candidate"
+    dictionary_identity: Optional[str] = None
+    is_high_risk: bool = False
+    is_resolved: bool = False
+    audit_history: List[AuditRecordSchema] = Field(default_factory=list)
+
+
+class ProductFieldReviewResponse(BaseModel):
+    """Complete field-level evidence review data for a product."""
+    product_id: str
+    row_id: int
+    mfg_part_number: str
+    brand_name: str
+    manufacturer_name: str
+    status: str
+    confidence_score: float
+    high_risk_unresolved_count: int
+    can_promote_to_validated: bool
+    fields: List[FieldReviewItemSchema]
+    audit_trail: List[AuditRecordSchema] = Field(default_factory=list)
+
+
+class FieldActionPayload(BaseModel):
+    """Field-level reviewer action payload."""
+    field_name: str
+    action: str  # "approve" | "edit" | "reject" | "mark_unknown"
+    new_value: Optional[str] = None
+    reason: str
+    reviewer_notes: Optional[str] = ""
+
+
+class PromoteValidatedResponse(BaseModel):
+    """Response when promoting product to Validated."""
+    success: bool
+    product_id: str
+    status: str
+    message: str
+    unresolved_high_risk_fields: List[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

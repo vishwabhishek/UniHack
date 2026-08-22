@@ -26,6 +26,28 @@ router = APIRouter(prefix="/api/playground", tags=["Playground"])
 # Predefined playground presets for 1-click testing
 PRESET_SAMPLES: List[Dict[str, Any]] = [
     {
+        "id": "preset-sharkbite-fitting",
+        "name": "SharkBite Brass Push-to-Connect Coupling (Fittings Demo)",
+        "category": "Fittings & Plumbing",
+        "mfg_part_num": "U008LFA",
+        "part_desc": "U008LFA 1/2IN BRASS PUSH COUPLING -- No Brand -- 200PSI LEAD FREE",
+        "part_manuf": "Reliance Worldwide Corporation (SHARK)",
+        "e1_brand": "-- Unbranded --",
+        "unilog_brand": "-- No Unilog Brand --",
+        "dib_brand": "-- No DIB Brand --"
+    },
+    {
+        "id": "preset-nibco-fitting",
+        "name": "NIBCO Copper 90° Pressure Elbow (Fittings Demo)",
+        "category": "Fittings & Plumbing",
+        "mfg_part_num": "NIB-607-1/2",
+        "part_desc": "607-1/2 1/2IN WROT COPPER 90 CUPXCUP ELBOW -- No Unilog Brand -- 300PSI",
+        "part_manuf": "NIBCO INC.",
+        "e1_brand": "-- Unbranded --",
+        "unilog_brand": "-- No Unilog Brand --",
+        "dib_brand": "-- No DIB Brand --"
+    },
+    {
         "id": "preset-1",
         "name": "Frigidaire Built-In Dishwasher",
         "category": "Appliances",

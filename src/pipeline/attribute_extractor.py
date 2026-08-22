@@ -43,13 +43,7 @@ class AttributeExtractor:
         template = taxonomy.get("attribute_template", [])
         comb = f"{desc} {desc_tokens}"
 
-        # 1. Ground truth exact alignments for known sample items
-        if mpn == "PDSH4816AF":
-            return self._ground_truth_pdsh4816af(entity, taxonomy)
-        elif mpn == "WDTS7024RZ":
-            return self._ground_truth_wdts7024rz(entity, taxonomy)
-
-        # 2. Extract core physical properties
+        # Extract core physical properties
         extracted_dict: Dict[str, Tuple[str, str]] = {}  # label -> (value, uom)
         
         # Series
@@ -165,9 +159,16 @@ class AttributeExtractor:
             "includes": "",
             "selling_qty": selling_qty,
             "selling_uom": selling_uom,
-            "warranty": "1 Year Manufacturer" if "Appliances" in taxonomy.get("dept", "") else "Limited Lifetime" if "Decking" in fine else "",
+            "warranty": self._extract_warranty(comb),
             "extracted_dict": extracted_dict
         }
+
+    def _extract_warranty(self, text: str) -> str:
+        """Extract explicit warranty statements from input text; never fabricate a default."""
+        m = re.search(r"(?i)\b(\d+[\s-]*(?:Year|Yr|Month)s?\s*(?:Manufacturer|Labor|Parts|Limited)?\s*Warranty|\bLimited Lifetime Warranty\b)", text)
+        if m:
+            return m.group(0).strip()
+        return ""
 
     def _extract_mounting(self, text: str) -> Optional[str]:
         for token, val in self.mounting_synonyms.items():
@@ -199,23 +200,36 @@ class AttributeExtractor:
         # Match multi-dimensional syntax e.g. 1/2"x18", 1x6-16', 6'x36", 4x8, 24 in W x 24-1/4 in D
         dim_m = re.search(r"(\d+(?:-\d+/\d+|\.\d+|/\d+)?(?:\s*\"|\s*'|\s*in|\s*ft)?)\s*[xX]\s*(\d+(?:-\d+/\d+|\.\d+|/\d+)?(?:\s*\"|\s*'|\s*in|\s*ft)?)(?:\s*[xX]\s*(\d+(?:-\d+/\d+|\.\d+|/\d+)?(?:\s*\"|\s*'|\s*in|\s*ft)?))?", text)
         if dim_m:
-            raw_dim_str = dim_m.group(0)
-            std_dim_str = self.uom_std.standardize_dimension_string(raw_dim_str)
+            raw_w = dim_m.group(1).strip()
+            raw_l = dim_m.group(2).strip()
+            raw_h = dim_m.group(3).strip() if dim_m.group(3) else None
             
-            d1 = self.uom_std.standardize_dimension_string(dim_m.group(1))
-            d2 = self.uom_std.standardize_dimension_string(dim_m.group(2))
-            d3 = self.uom_std.standardize_dimension_string(dim_m.group(3)) if dim_m.group(3) else None
+            norm_w, u_w = self.uom_std.normalize_dimension_token(raw_w)
+            norm_l, u_l = self.uom_std.normalize_dimension_token(raw_l)
+            norm_h, u_h = self.uom_std.normalize_dimension_token(raw_h) if raw_h else (None, None)
             
-            dims.width = d1
-            dims.width_uom = "in"
-            dims.length = d2
-            dims.length_uom = "in"
-            if d3:
-                dims.height = d3
-                dims.height_uom = "in"
+            dims.width = norm_w
+            dims.width_uom = u_w
+            dims.length = norm_l
+            dims.length_uom = u_l
+            if norm_h:
+                dims.height = norm_h
+                dims.height_uom = u_h
             
-            return std_dim_str, dims
-        
+            if norm_h:
+                size_str = f"{norm_w} {u_w or 'in'} W x {norm_l} {u_l or 'in'} L x {norm_h} {u_h or 'in'} H"
+            else:
+                size_str = f"{norm_w} {u_w or 'in'} W x {norm_l} {u_l or 'in'} L"
+            return size_str, dims
+
+        # Match single dimension with unit e.g. 50.25 in, 24", 16 ft
+        single_m = re.search(r"(\d+(?:-\d+/\d+|\.\d+|/\d+)?)\s*(\"|'|in|ft|mm|cm|yd)", text, re.I)
+        if single_m:
+            norm_val, uom = self.uom_std.normalize_dimension_token(f"{single_m.group(1)}{single_m.group(2)}")
+            dims.length = norm_val
+            dims.length_uom = uom
+            return f"{norm_val} {uom}", dims
+
         return None, dims
 
     def _extract_with_clause(self, text: str) -> str:
@@ -274,116 +288,3 @@ class AttributeExtractor:
         if "folding tines" in text.lower():
             features.append("Folding Tines")
         return features[:20]
-
-    def _ground_truth_pdsh4816af(self, entity: Dict[str, str], taxonomy: Dict[str, Any]) -> Dict[str, Any]:
-        """Align with Ground Truth Row 0."""
-        slots = [
-            AttributeTriple(label="Series", value="Professional Series", uom=""),
-            AttributeTriple(label="Model", value="", uom=""),
-            AttributeTriple(label="Number of Wash Cycles", value="5", uom=""),
-            AttributeTriple(label="Voltage Rating", value="120", uom="V"),
-            AttributeTriple(label="Amperage Rating", value="15", uom="A"),
-            AttributeTriple(label="Mounting Type", value="Leg", uom=""),
-            AttributeTriple(label="Plug Type", value="", uom=""),
-            AttributeTriple(label="Size", value="24 in W x 24-1/4 in D", uom=""),
-            AttributeTriple(label="Depth With Door Open", value="50-1/4", uom="in"),
-            AttributeTriple(label="Minimum Height", value="8-1/2 in Upper Rack, 11-1/4 in Lower Rack", uom=""),
-            AttributeTriple(label="Maximum Height", value="10-3/8 in Upper Rack, 13-1/4 in Lower Rack", uom=""),
-            AttributeTriple(label="Sound Level", value="47", uom="dBA"),
-            AttributeTriple(label="Material", value="Stainless Steel", uom=""),
-            AttributeTriple(label="Color", value="", uom=""),
-            AttributeTriple(label="Additional Information", value="240 kW-hr Annual Energy, 1 to 12 hr Delay Start Hours", uom=""),
-        ]
-        while len(slots) < 50:
-            slots.append(AttributeTriple(label="", value="", uom=""))
-        
-        return {
-            "attributes": slots,
-            "dimensions": PhysicalDimensions(width="24", width_uom="in", length="24-1/4", length_uom="in"),
-            "item_features": [],
-            "with_spec": "With CleanBoost™",
-            "standard_approvals": "ASSE 1006|CEE Tier 2 Qualified|cUL Listed|ENERGY STAR Certified|NSF Certified|UL Listed",
-            "prop_65": "",
-            "application": "",
-            "includes": "",
-            "selling_qty": "1",
-            "selling_uom": "EA",
-            "warranty": "1 Year Manufacturer, 1 Year Labor and Parts",
-            "extracted_dict": {
-                "Series": ("Professional Series", ""),
-                "Number of Wash Cycles": ("5", ""),
-                "Voltage Rating": ("120", "V"),
-                "Amperage Rating": ("15", "A"),
-                "Mounting Type": ("Leg", ""),
-                "Sound Level": ("47", "dBA"),
-                "Material": ("Stainless Steel", ""),
-                "Depth With Door Open": ("50-1/4", "in"),
-                "Size": ("24 in W x 24-1/4 in D", ""),
-                "Minimum Height": ("8-1/2 in Upper Rack, 11-1/4 in Lower Rack", ""),
-                "Maximum Height": ("10-3/8 in Upper Rack, 13-1/4 in Lower Rack", ""),
-                "Additional Information": ("240 kW-hr Annual Energy, 1 to 12 hr Delay Start Hours", "")
-            }
-        }
-
-    def _ground_truth_wdts7024rz(self, entity: Dict[str, str], taxonomy: Dict[str, Any]) -> Dict[str, Any]:
-        """Align with Ground Truth Row 1."""
-        slots = [
-            AttributeTriple(label="Series", value="Eco Series", uom=""),
-            AttributeTriple(label="Model", value="", uom=""),
-            AttributeTriple(label="Number of Wash Cycles", value="", uom=""),
-            AttributeTriple(label="Voltage Rating", value="120", uom="V"),
-            AttributeTriple(label="Amperage Rating", value="10", uom="A"),
-            AttributeTriple(label="Mounting Type", value="Built-in", uom=""),
-            AttributeTriple(label="Plug Type", value="", uom=""),
-            AttributeTriple(label="Size", value="33-7/16 in H x 23-7/8 in W x 22-5/8 in D", uom=""),
-            AttributeTriple(label="Depth With Door Open", value="50-3/16", uom="in"),
-            AttributeTriple(label="Minimum Height", value="33-7/16", uom="in"),
-            AttributeTriple(label="Maximum Height", value="", uom=""),
-            AttributeTriple(label="Sound Level", value="41", uom="dBA"),
-            AttributeTriple(label="Material", value="Stainless Steel", uom=""),
-            AttributeTriple(label="Color", value="Stainless Steel", uom=""),
-            AttributeTriple(label="Additional Information", value="Folding Tines, Leak Detection System, Moisture Repellent Silverware Basket, Normal Cycle, Quick Wash Cycle, Sani Rinse Option, Sensor Cycle, Triple Wash Spray", uom=""),
-        ]
-        while len(slots) < 50:
-            slots.append(AttributeTriple(label="", value="", uom=""))
-
-        features = [
-            "3rd rack with extra wash action",
-            "Adjustable 2nd Rack",
-            "41 dBA",
-            "Moisture Repellent Silverware Basket",
-            "Sensor cycle",
-            "Sani Rinse Option",
-            "Leak Detection System",
-            "Folding Tines",
-            "Normal cycle",
-            "Triple Wash Spray",
-            "Quick Wash Cycle"
-        ]
-
-        return {
-            "attributes": slots,
-            "dimensions": PhysicalDimensions(height="33-7/16", height_uom="in", width="23-7/8", width_uom="in", length="22-5/8", length_uom="in"),
-            "item_features": features,
-            "with_spec": "With Washing 3rd Rack, Water Repellent Silverware Basket",
-            "standard_approvals": "",
-            "prop_65": "",
-            "application": "",
-            "includes": "",
-            "selling_qty": "1",
-            "selling_uom": "EA",
-            "warranty": "1 Year Manufacturer",
-            "extracted_dict": {
-                "Series": ("Eco Series", ""),
-                "Voltage Rating": ("120", "V"),
-                "Amperage Rating": ("10", "A"),
-                "Mounting Type": ("Built-in", ""),
-                "Sound Level": ("41", "dBA"),
-                "Material": ("Stainless Steel", ""),
-                "Color": ("Stainless Steel", ""),
-                "Depth With Door Open": ("50-3/16", "in"),
-                "Size": ("33-7/16 in H x 23-7/8 in W x 22-5/8 in D", ""),
-                "Minimum Height": ("33-7/16", "in"),
-                "Additional Information": ("Folding Tines, Leak Detection System, Moisture Repellent Silverware Basket, Normal Cycle, Quick Wash Cycle, Sani Rinse Option, Sensor Cycle, Triple Wash Spray", "")
-            }
-        }

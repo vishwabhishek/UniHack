@@ -4,6 +4,7 @@ import {
   loginUser,
   registerUser,
   getCurrentUserProfile,
+  logoutUser,
   setAuthToken,
   getAuthToken,
   getSavedUserProfile
@@ -30,8 +31,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(getSavedUserProfile());
-  const [token, setToken] = useState<string | null>(getAuthToken());
-  const [isLoading, setIsLoading] = useState<boolean>(!getSavedUserProfile() && !!getAuthToken());
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -39,17 +40,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const loadInitialUser = async () => {
-    const savedToken = getAuthToken();
-    if (!savedToken) {
-      setIsLoading(false);
-      return;
-    }
-
     try {
       const profile = await getCurrentUserProfile();
       setUser(profile);
-      setToken(savedToken);
-      setAuthToken(savedToken, profile);
+      setToken(null);
+      setAuthToken(null, profile);
     } catch (e) {
       console.error('Session expired or invalid token:', e);
       setAuthToken(null, null);
@@ -65,7 +60,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await loginUser(email, password);
       setUser(res.user);
-      setToken(res.token);
+      setToken(null);
       setAuthToken(res.token, res.user);
       setIsAuthModalOpen(false);
     } finally {
@@ -78,7 +73,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await registerUser(email, password, name, role);
       setUser(res.user);
-      setToken(res.token);
+      setToken(null);
       setAuthToken(res.token, res.user);
       setIsAuthModalOpen(false);
     } finally {
@@ -87,6 +82,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
+    // Clear UI state immediately; the request invalidates the server-side
+    // token version and is best-effort if the network is already unavailable.
+    void logoutUser().catch((error) => console.warn('Server logout failed:', error));
     setAuthToken(null, null);
     setUser(null);
     setToken(null);
@@ -97,8 +95,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return allowedRoles.includes(user.role);
   };
 
-  const canEdit = hasRole(['admin', 'specialist']);
-  const canApprove = hasRole(['admin', 'specialist', 'reviewer']);
+  const canEdit = hasRole(['admin', 'specialist', 'reviewer']);
+  const canApprove = hasRole(['admin', 'reviewer']);
   const canAdmin = hasRole(['admin']);
 
   return (

@@ -650,6 +650,83 @@
         "Standard/Approvals",
         "Additional Information"
       ]
+    },
+    {
+      "id": "pipe_fittings",
+      "keywords": [
+        "elbow",
+        "coupling",
+        "tee",
+        "fitting",
+        "copper solder",
+        "push-to-connect",
+        "pipe fitting",
+        "solder elbow",
+        "reducing tee"
+      ],
+      "dept": "Plumbing",
+      "class_name": "Pipe & Tubing Fittings",
+      "fine": "Metallic & Push Fittings",
+      "classpath": "Plumbing>Pipe, Tubing & Fittings>Pipe Fittings",
+      "unspsc": "40173300",
+      "product_name": "Pipe Fitting",
+      "attribute_template": [
+        "Fitting Type",
+        "Connection Type",
+        "Nominal Size",
+        "Material",
+        "Pressure Rating",
+        "Standard/Approvals",
+        "Additional Information"
+      ]
+    },
+    {
+      "id": "conduit_fittings",
+      "keywords": [
+        "cord grip",
+        "cord connector",
+        "conduit fitting",
+        "cable connector"
+      ],
+      "dept": "Electrical",
+      "class_name": "Conduit & Fittings",
+      "fine": "Cord & Cable Connectors",
+      "classpath": "Electrical>Conduit & Cable Management>Cord Connectors",
+      "unspsc": "39121431",
+      "product_name": "Cord Grip Connector",
+      "attribute_template": [
+        "Fitting Type",
+        "Connection Type",
+        "Nominal Size",
+        "Material",
+        "Cable Range",
+        "Standard/Approvals"
+      ]
+    },
+    {
+      "id": "faucets_fixtures",
+      "keywords": [
+        "faucet",
+        "pulldown faucet",
+        "kitchen faucet",
+        "lavatory faucet",
+        "sink faucet"
+      ],
+      "dept": "Plumbing",
+      "class_name": "Plumbing Fixtures",
+      "fine": "Kitchen & Bathroom Faucets",
+      "classpath": "Plumbing>Plumbing Fixtures>Kitchen & Lavatory Faucets",
+      "unspsc": "30181702",
+      "product_name": "Faucet",
+      "attribute_template": [
+        "Faucet Type",
+        "Color / Finish",
+        "Flow Rate",
+        "Connection Type",
+        "Mounting Type",
+        "Spout Reach",
+        "Number of Handles"
+      ]
     }
   ]
 }

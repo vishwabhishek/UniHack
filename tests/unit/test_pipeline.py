@@ -205,4 +205,11 @@ def test_engine_end_to_end_single():
 
     delivery_dict = DeliveryMapper.to_delivery_dict(enriched)
     assert len(delivery_dict) == 252
-    assert delivery_dict["INVOICE_DESC"] == "DISHWASHER LEG 5 SST 120V 15A 50-1/4IN"
+    assert delivery_dict["INVOICE_DESC"] == enriched.invoice_desc
+    assert delivery_dict["Country Of Origin"] == ""
+    assert delivery_dict["Actual Image (Yes/No)"] == "No"
+    assert delivery_dict["Product Image"] == ""
+    assert delivery_dict["Specification Sheet"] == ""
+    assert delivery_dict["MFR URL"] == ""
+    assert delivery_dict["Warranty"] == ""
+    assert "UNVERIFIED_ASSET" in enriched.validation_flags

@@ -1,0 +1,94 @@
+[
+  {
+    "chunk_id": "chk_wdts7024rz_1_95b4ebdd",
+    "source_id": "src_wdts7024rz_cf5f2601",
+    "mpn": "WDTS7024RZ",
+    "brand": "WHIRLPOOL\u00ae",
+    "manufacturer": "Whirlpool Corporation",
+    "section_title": "General Specifications",
+    "page_number": 1,
+    "text_content": "WHIRLPOOL CORPORATION PRODUCT SPECIFICATIONS\nMODEL: WDTS7024RZ (24 in Built-In Top Control Dishwasher)",
+    "key_value_specs": {
+      "MODEL": "WDTS7024RZ (24 in Built-In Top Control Dishwasher)"
+    },
+    "chunk_hash": "95b4ebdde6407e27"
+  },
+  {
+    "chunk_id": "chk_wdts7024rz_2_f5170a47",
+    "source_id": "src_wdts7024rz_cf5f2601",
+    "mpn": "WDTS7024RZ",
+    "brand": "WHIRLPOOL\u00ae",
+    "manufacturer": "Whirlpool Corporation",
+    "section_title": "PRODUCT SPECIFICATIONS",
+    "page_number": 1,
+    "text_content": "Mounting Type: Built-In\nTub Material: Stainless Steel\nPlace Settings: 15\nNumber of Cycles: 5",
+    "key_value_specs": {
+      "Mounting Type": "Built-In",
+      "Tub Material": "Stainless Steel",
+      "Place Settings": "15",
+      "Number of Cycles": "5"
+    },
+    "chunk_hash": "f5170a478821106f"
+  },
+  {
+    "chunk_id": "chk_wdts7024rz_3_6a22a448",
+    "source_id": "src_wdts7024rz_cf5f2601",
+    "mpn": "WDTS7024RZ",
+    "brand": "WHIRLPOOL\u00ae",
+    "manufacturer": "Whirlpool Corporation",
+    "section_title": "ELECTRICAL SPECIFICATIONS",
+    "page_number": 1,
+    "text_content": "Rated Voltage: 120 V\nAmperage: 15 A\nFrequency: 60 Hz",
+    "key_value_specs": {
+      "Rated Voltage": "120 V",
+      "Amperage": "15 A",
+      "Frequency": "60 Hz"
+    },
+    "chunk_hash": "6a22a448ca839280"
+  },
+  {
+    "chunk_id": "chk_wdts7024rz_4_c2757e6c",
+    "source_id": "src_wdts7024rz_cf5f2601",
+    "mpn": "WDTS7024RZ",
+    "brand": "WHIRLPOOL\u00ae",
+    "manufacturer": "Whirlpool Corporation",
+    "section_title": "PERFORMANCE & SOUND",
+    "page_number": 1,
+    "text_content": "Sound Level: 47 dBA\nWash System: TotalCoverage Spray Arm\nEnergy Star Certified: Yes",
+    "key_value_specs": {
+      "Sound Level": "47 dBA",
+      "Wash System": "TotalCoverage Spray Arm",
+      "Energy Star Certified": "Yes"
+    },
+    "chunk_hash": "c2757e6c37be85c6"
+  },
+  {
+    "chunk_id": "chk_wdts7024rz_5_a7786437",
+    "source_id": "src_wdts7024rz_cf5f2601",
+    "mpn": "WDTS7024RZ",
+    "brand": "WHIRLPOOL\u00ae",
+    "manufacturer": "Whirlpool Corporation",
+    "section_title": "DIMENSIONS & WEIGHT",
+    "page_number": 1,
+    "text_content": "Width: 23-7/8 in\nHeight: 34-1/2 in\nDepth: 24-1/2 in\nProduct Weight: 85 lb",
+    "key_value_specs": {
+      "Width": "23-7/8 in",
+      "Height": "34-1/2 in",
+      "Depth": "24-1/2 in",
+      "Product Weight": "85 lb"
+    },
+    "chunk_hash": "a7786437db0983e4"
+  },
+  {
+    "chunk_id": "chk_wdts7024rz_6_0b2d9d66",
+    "source_id": "src_wdts7024rz_cf5f2601",
+    "mpn": "WDTS7024RZ",
+    "brand": "WHIRLPOOL\u00ae",
+    "manufacturer": "Whirlpool Corporation",
+    "section_title": "WARRANTY",
+    "page_number": 1,
+    "text_content": "1 Year Limited Warranty (Parts and Labor)",
+    "key_value_specs": {},
+    "chunk_hash": "0b2d9d662b7b0752"
+  }
+]

@@ -4,15 +4,33 @@ import {
   Edit3,
   CheckCircle2,
   AlertTriangle,
-  Plus,
-  Trash2,
-  Save,
   X,
-  ExternalLink
+  ExternalLink,
+  ShieldAlert,
+  ShieldCheck,
+  FileText,
+  History,
+  XCircle,
+  HelpCircle,
+  Check
 } from 'lucide-react';
-import { ReviewItem, ProductDetail, AttributeTriple } from '../types';
-import { fetchReviewQueue, approveProduct, fetchProductDetail, updateProduct } from '../services/api';
+import {
+  ReviewItem,
+  ProductFieldReview,
+  FieldReviewItem,
+  AuditRecord
+} from '../types';
+import {
+  fetchReviewQueue,
+  fetchProductFieldReview,
+  submitFieldAction,
+  promoteProductValidated
+} from '../services/api';
 import { useToast } from './Toast';
+import { useAuth } from '../context/AuthContext';
+import { PageHeader } from './common/PageHeader';
+import { StatusBadge } from './common/StatusBadge';
+import { EmptyState } from './common/EmptyState';
 
 interface ReviewQueueProps {
   onInspectProduct: (productId: string) => void;
@@ -21,20 +39,28 @@ interface ReviewQueueProps {
 
 export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRefreshCatalog }) => {
   const { showToast } = useToast();
+  const { user, canApprove } = useAuth();
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editProduct, setEditProduct] = useState<ProductDetail | null>(null);
-  const [saving, setSaving] = useState<boolean>(false);
 
-  // Editable Form State
-  const [editBrand, setEditBrand] = useState<string>('');
-  const [editManuf, setEditManuf] = useState<string>('');
-  const [editInvoiceDesc, setEditInvoiceDesc] = useState<string>('');
-  const [editMobileDesc, setEditMobileDesc] = useState<string>('');
-  const [editShortDesc, setEditShortDesc] = useState<string>('');
-  const [editLongDesc, setEditLongDesc] = useState<string>('');
-  const [editAttributes, setEditAttributes] = useState<AttributeTriple[]>([]);
+  // Field-level review drawer state
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [fieldReviewData, setFieldReviewData] = useState<ProductFieldReview | null>(null);
+  const [loadingFields, setLoadingFields] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'fields' | 'audit'>('fields');
+  const [fieldFilter, setFieldFilter] = useState<'all' | 'high_risk' | 'unresolved'>('all');
+
+  // Action dialog state
+  const [activeFieldAction, setActiveFieldAction] = useState<{
+    fieldName: string;
+    displayLabel: string;
+    action: 'approve' | 'edit' | 'reject' | 'mark_unknown';
+    currentValue: string;
+  } | null>(null);
+  const [actionNewValue, setActionNewValue] = useState<string>('');
+  const [actionReason, setActionReason] = useState<string>('');
+  const [submittingAction, setSubmittingAction] = useState<boolean>(false);
+  const [promoting, setPromoting] = useState<boolean>(false);
 
   useEffect(() => {
     loadQueue();
@@ -53,139 +79,136 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
     }
   };
 
-  const handleQuickApprove = async (id: string) => {
+  const handleOpenFieldReview = async (productId: string) => {
+    setSelectedProductId(productId);
+    setLoadingFields(true);
     try {
-      await approveProduct(id, 'Approved via HITL triage board');
-      showToast('Approved', `Product #${id} marked Validated`, 'success');
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      if (onRefreshCatalog) onRefreshCatalog();
+      const data = await fetchProductFieldReview(productId);
+      setFieldReviewData(data);
+      setActiveTab('fields');
     } catch (e) {
-      console.error('Failed to approve product:', e);
-      showToast('Error', 'Approval failed', 'error');
+      console.error('Failed to load field review data:', e);
+      showToast('Error', 'Failed to load field-level evidence', 'error');
+      setSelectedProductId(null);
+    } finally {
+      setLoadingFields(false);
     }
   };
 
-  const handleOpenEdit = async (id: string) => {
-    try {
-      const detail = await fetchProductDetail(id);
-      setEditingId(id);
-      setEditProduct(detail);
-      setEditBrand(detail.brand_name || '');
-      setEditManuf(detail.manufacturer_name || '');
-      setEditInvoiceDesc(detail.invoice_desc || '');
-      setEditMobileDesc(detail.mobile_desc || '');
-      setEditShortDesc(detail.short_desc || '');
-      setEditLongDesc(detail.long_desc1 || '');
-      setEditAttributes(detail.attributes || []);
-    } catch (e) {
-      console.error('Failed to load product detail for edit:', e);
-      showToast('Error', 'Failed to load record details', 'error');
+  const handleTriggerAction = (
+    field: FieldReviewItem,
+    action: 'approve' | 'edit' | 'reject' | 'mark_unknown'
+  ) => {
+    setActiveFieldAction({
+      fieldName: field.field_name,
+      displayLabel: field.display_label,
+      action,
+      currentValue: field.normalized_value || field.candidate_value || ''
+    });
+    setActionNewValue(field.normalized_value || field.candidate_value || '');
+    if (action === 'approve') {
+      setActionReason('Verified against official manufacturer source evidence');
+    } else if (action === 'reject') {
+      setActionReason('Unsupported or contradictory to official reference data');
+    } else if (action === 'mark_unknown') {
+      setActionReason('Field not supported by evidence; marked unknown to remain blank in export');
+    } else {
+      setActionReason('');
     }
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingId) return;
-    setSaving(true);
+  const handleExecuteAction = async () => {
+    if (!selectedProductId || !activeFieldAction) return;
+    if (!actionReason.trim()) {
+      showToast('Reason Required', 'Please enter a reason for this audit record', 'warning');
+      return;
+    }
+
+    setSubmittingAction(true);
     try {
-      await updateProduct(editingId, {
-        brand_name: editBrand,
-        manufacturer_name: editManuf,
-        invoice_desc: editInvoiceDesc,
-        mobile_desc: editMobileDesc,
-        short_desc: editShortDesc,
-        long_desc1: editLongDesc,
-        attributes: editAttributes,
-        status: 'Validated'
+      const updated = await submitFieldAction(selectedProductId, {
+        field_name: activeFieldAction.fieldName,
+        action: activeFieldAction.action,
+        new_value: activeFieldAction.action === 'edit' ? actionNewValue : undefined,
+        reason: actionReason.trim()
       });
-      setEditingId(null);
-      setEditProduct(null);
-      showToast('Record Saved', 'Updated specifications and marked Validated', 'success');
+      setFieldReviewData(updated);
+      showToast(
+        'Action Applied',
+        `Field '${activeFieldAction.displayLabel}' updated (${activeFieldAction.action})`,
+        'success'
+      );
+      setActiveFieldAction(null);
+      setActionReason('');
+      setActionNewValue('');
+      // Reload parent queue in background
+      const q = await fetchReviewQueue();
+      setItems(q.items);
+      if (onRefreshCatalog) onRefreshCatalog();
+    } catch (e: any) {
+      console.error('Failed to submit field action:', e);
+      showToast('Error', e.message || 'Failed to update field', 'error');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  const handlePromoteProduct = async () => {
+    if (!selectedProductId) return;
+    setPromoting(true);
+    try {
+      const res = await promoteProductValidated(
+        selectedProductId,
+        'All high-risk and core fields verified by specialist'
+      );
+      showToast('Product Validated', res.message, 'success');
+      setSelectedProductId(null);
+      setFieldReviewData(null);
       await loadQueue();
       if (onRefreshCatalog) onRefreshCatalog();
-    } catch (e) {
-      console.error('Failed to save update:', e);
-      showToast('Error', 'Failed to save record updates', 'error');
+    } catch (e: any) {
+      console.error('Failed to promote product to validated:', e);
+      showToast('Validation Blocked', e.message || 'High-risk fields unresolved', 'error');
     } finally {
-      setSaving(false);
+      setPromoting(false);
     }
   };
 
-  const addAttributeSlot = () => {
-    setEditAttributes((prev) => [...prev, { label: '', value: '', uom: '' }]);
-  };
-
-  const removeAttributeSlot = (index: number) => {
-    setEditAttributes((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateAttributeSlot = (index: number, field: keyof AttributeTriple, val: string) => {
-    setEditAttributes((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: val };
-      return copy;
-    });
-  };
-
-  const renderMiniGauge = (score: number) => {
-    const active = Math.round(score * 10);
-    return (
-      <div className="flex items-center">
-        <div className="mini-gauge">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <span key={i} className={i < active ? 'on amber' : ''} />
-          ))}
-        </div>
-        <span className="conf-val text-[var(--amber)]">{score.toFixed(2)}</span>
-      </div>
-    );
+  const renderStatusBadge = (status: string) => {
+    return <StatusBadge status={status} />;
   };
 
   return (
     <div className="space-y-4 font-sans">
       
-      {/* Header Banner */}
-      <div className="p-[16px_18px] rounded-[10px] bg-[var(--surface-2)] border border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xs font-mono font-semibold text-[var(--text-primary)] uppercase tracking-wider">
-              HUMAN-IN-THE-LOOP EXCEPTION TRIAGE BOARD
-            </h2>
-            <span className="chip flagged font-bold">
-              {items.length} ANOMALIES
-            </span>
-          </div>
-          <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            Records with confidence &lt; 0.85 or data conflicts routed for specialist sign-off before delivery
-          </p>
-        </div>
+      {/* Standard Page Header */}
+      <PageHeader
+        title="Field-Level Evidence Review & HITL Triage"
+        description="Audit raw distributor inputs against registered manufacturer evidence. Only verified fields reach Validated status."
+        badge={<span className="chip flagged font-bold">{items.length} PRODUCTS FLAGGED</span>}
+        actions={
+          <button
+            onClick={loadQueue}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-1)] hover:bg-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white rounded-md text-xs font-mono border border-[var(--border)] transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[var(--cyan)]' : ''}`} />
+            <span>SYNC QUEUE</span>
+          </button>
+        }
+      />
 
-        <button
-          onClick={loadQueue}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-1)] hover:bg-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white rounded-md text-xs font-mono border border-[var(--border)] transition-colors cursor-pointer"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[var(--cyan)]' : ''}`} />
-          <span>SYNC QUEUE</span>
-        </button>
-      </div>
-
-      {/* Grid of Exception Cards */}
+      {/* Grid of Flagged Items */}
       {loading ? (
         <div className="py-20 text-center text-[var(--text-muted)] space-y-3 font-mono">
           <div className="w-7 h-7 border-2 border-[var(--amber)] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs">LOADING EXCEPTION TRIAGE RECORDS...</p>
         </div>
       ) : items.length === 0 ? (
-        <div className="p-12 rounded-[10px] bg-[var(--surface-2)] border border-[var(--border)] text-center space-y-2 font-mono">
-          <div className="w-8 h-8 rounded-full bg-[var(--green-bg)] text-[var(--green)] flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
-          <h3 className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">
-            ALL CATALOG ITEMS VALIDATED
-          </h3>
-          <p className="text-xs text-[var(--text-muted)] font-sans max-w-md mx-auto">
-            Zero records currently triggered anomaly flags. 100% of items meet master delivery criteria.
-          </p>
-        </div>
+        <EmptyState
+          icon={CheckCircle2}
+          title="All Catalog Items Fully Verified & Validated"
+          description="Zero products currently contain unverified high-risk fields or anomaly flags. All candidate records are compliant with 252-column master delivery format."
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {items.map((item) => (
@@ -206,53 +229,47 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
                   </div>
                 </div>
 
-                {renderMiniGauge(item.confidence_score)}
+                <div className="text-right">
+                  <span className="font-mono text-xs text-[var(--amber)] font-bold">
+                    {(item.confidence_score * 100).toFixed(1)}% Conf
+                  </span>
+                  <div className="text-[10px] text-[var(--text-muted)] font-mono">
+                    {item.status}
+                  </div>
+                </div>
               </div>
 
-              {/* Anomaly Badges */}
+              {/* Anomaly Flags */}
               <div className="flex flex-wrap gap-1.5">
                 {(item.anomaly_flags || []).map((r: string, i: number) => (
-                  <span key={i} className="chip flagged flex items-center gap-1">
-                    <AlertTriangle className="w-2.5 h-2.5" />
+                  <span key={i} className="chip flagged flex items-center gap-1 text-[10px]">
+                    <AlertTriangle className="w-2.5 h-2.5 text-amber-400" />
                     <span>{r}</span>
                   </span>
                 ))}
               </div>
 
-              {/* Raw vs Enriched Diff Preview */}
-              <div className="bg-[var(--surface-1)] p-3 rounded-md border border-[var(--border)] space-y-1.5 text-[11px] font-mono">
-                <div>
-                  <span className="text-[var(--red)] font-semibold block text-[10px]">RAW SUPPLIER INPUT:</span>
-                  <span className="text-[var(--text-muted)] truncate block">{item.raw_part_desc || 'No raw description provided'}</span>
-                </div>
-                <div>
-                  <span className="text-[var(--green)] font-semibold block text-[10px]">PROPOSED ENRICHED TITLE:</span>
-                  <span className="text-[var(--text-primary)] truncate block">{item.short_desc || 'Pending spec curation'}</span>
-                </div>
+              {/* Supplier Input Preview */}
+              <div className="bg-[var(--surface-1)] p-2.5 rounded border border-[var(--border)] space-y-1 text-[11px] font-mono">
+                <div className="text-[10px] text-[var(--text-muted)]">RAW SUPPLIER INPUT:</div>
+                <div className="text-[var(--text-primary)] truncate">{item.raw_part_desc || 'No raw description provided'}</div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-1 border-t border-[var(--border)] font-mono text-xs">
+              <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] font-mono text-xs">
                 <button
                   onClick={() => onInspectProduct(item.id)}
-                  className="px-2.5 py-1.5 rounded-md bg-[var(--surface-1)] hover:bg-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white border border-[var(--border)] transition-colors flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1.5 rounded bg-[var(--surface-1)] hover:bg-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white border border-[var(--border)] transition-colors flex items-center gap-1 cursor-pointer text-xs"
                 >
                   <ExternalLink className="w-3 h-3" />
                   <span>INSPECT</span>
                 </button>
                 <button
-                  onClick={() => handleOpenEdit(item.id)}
-                  className="px-2.5 py-1.5 rounded-md bg-[var(--amber-bg)] hover:opacity-90 text-[var(--amber)] border border-[var(--amber)] transition-opacity flex items-center gap-1 font-semibold cursor-pointer"
+                  onClick={() => handleOpenFieldReview(item.id)}
+                  className="px-3.5 py-1.5 rounded bg-[var(--cyan-bg)] hover:opacity-90 text-[var(--cyan)] border border-[var(--cyan)] font-semibold transition-opacity flex items-center gap-1.5 cursor-pointer text-xs"
                 >
-                  <Edit3 className="w-3 h-3" />
-                  <span>CURATE SPEC</span>
-                </button>
-                <button
-                  onClick={() => handleQuickApprove(item.id)}
-                  className="px-3 py-1.5 rounded-md bg-[var(--green-bg)] hover:opacity-90 text-[var(--green)] border border-[var(--green)] transition-opacity flex items-center gap-1 font-semibold cursor-pointer"
-                >
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>APPROVE</span>
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>FIELD EVIDENCE REVIEW</span>
                 </button>
               </div>
 
@@ -261,154 +278,358 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ onInspectProduct, onRe
         </div>
       )}
 
-      {/* Specialist Edit Modal Drawer */}
-      {editingId && editProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[var(--surface-2)] border border-[var(--border-strong)] rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden font-sans">
+      {/* Field-Level Evidence Review Modal */}
+      {selectedProductId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="bg-[var(--surface-2)] border border-[var(--border-strong)] rounded-xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden font-sans">
             
             {/* Modal Header */}
             <div className="p-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface-1)]">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-[2px] bg-[var(--amber)]" />
-                <h3 className="text-xs font-mono font-semibold text-[var(--text-primary)] uppercase">
-                  CURATE MASTER SPECIFICATION — ROW #{editProduct.raw.row_id} ({editProduct.mfg_part_number})
-                </h3>
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-[2px] bg-[var(--cyan)]" />
+                <div>
+                  <h3 className="text-xs font-mono font-bold text-[var(--text-primary)] uppercase flex items-center gap-2">
+                    <span>EVIDENCE REVIEW — {fieldReviewData?.mfg_part_number || 'PRODUCT'}</span>
+                    <span className="text-[var(--text-muted)] font-normal">(ROW #{fieldReviewData?.row_id})</span>
+                  </h3>
+                  <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                    {fieldReviewData?.brand_name} · {fieldReviewData?.manufacturer_name}
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={() => setEditingId(null)}
-                className="p-1 rounded-md text-[var(--text-muted)] hover:text-white hover:bg-[var(--surface-2)] cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+
+              <div className="flex items-center gap-3">
+                {fieldReviewData && (
+                  <div className="flex items-center gap-2">
+                    {fieldReviewData.high_risk_unresolved_count > 0 ? (
+                      <span className="px-2.5 py-1 rounded bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[11px] font-mono font-semibold flex items-center gap-1">
+                        <ShieldAlert className="w-3 h-3" />
+                        {fieldReviewData.high_risk_unresolved_count} HIGH-RISK UNRESOLVED
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono font-semibold flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" />
+                        ALL HIGH-RISK FIELDS RESOLVED
+                      </span>
+                    )}
+
+                    <button
+                      onClick={handlePromoteProduct}
+                      disabled={!fieldReviewData.can_promote_to_validated || !canApprove || promoting}
+                      className={`px-3 py-1 rounded font-mono text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                        fieldReviewData.can_promote_to_validated && canApprove
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 cursor-pointer shadow-sm'
+                          : 'bg-zinc-800 text-zinc-500 border-zinc-700 cursor-not-allowed'
+                      }`}
+                      title={
+                        !canApprove
+                          ? `Promotion requires Reviewer or Admin role (current role: ${user?.role || 'viewer'})`
+                          : fieldReviewData.can_promote_to_validated
+                          ? 'Promote this product to Validated status'
+                          : 'Resolve all high-risk fields first'
+                      }
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{promoting ? 'VALIDATING...' : 'PROMOTE TO VALIDATED'}</span>
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => {
+                    setSelectedProductId(null);
+                    setFieldReviewData(null);
+                  }}
+                  className="p-1 rounded-md text-[var(--text-muted)] hover:text-white hover:bg-[var(--surface-2)] cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Modal Body Form */}
-            <div className="p-5 overflow-y-auto space-y-4 text-xs font-mono">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-1">CANONICAL BRAND</label>
-                  <input
-                    type="text"
-                    value={editBrand}
-                    onChange={(e) => setEditBrand(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md text-[var(--text-primary)] focus:border-[var(--cyan)] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-1">MANUFACTURER NAME</label>
-                  <input
-                    type="text"
-                    value={editManuf}
-                    onChange={(e) => setEditManuf(e.target.value)}
-                    className="w-full px-3 py-2 bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md text-[var(--text-primary)] focus:border-[var(--cyan)] focus:outline-none"
-                  />
-                </div>
+            {/* Subheader Tabs & Filter Strip */}
+            <div className="px-4 py-2 border-b border-[var(--border)] bg-[var(--surface-2)] flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab('fields')}
+                  className={`px-3 py-1 rounded border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'fields'
+                      ? 'bg-[var(--surface-1)] text-[var(--cyan)] border-[var(--cyan)] font-bold'
+                      : 'text-[var(--text-muted)] border-transparent hover:text-white'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>FIELD EVIDENCE ({fieldReviewData?.fields?.length || 0})</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('audit')}
+                  className={`px-3 py-1 rounded border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'audit'
+                      ? 'bg-[var(--surface-1)] text-[var(--cyan)] border-[var(--cyan)] font-bold'
+                      : 'text-[var(--text-muted)] border-transparent hover:text-white'
+                  }`}
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>AUDIT TRAIL ({fieldReviewData?.audit_trail?.length || 0})</span>
+                </button>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-1">
-                  INVOICE_DESC (ERP Hard Gate: ≤40 Chars, ALL CAPS)
-                </label>
-                <input
-                  type="text"
-                  maxLength={40}
-                  value={editInvoiceDesc}
-                  onChange={(e) => setEditInvoiceDesc(e.target.value.toUpperCase())}
-                  className="w-full px-3 py-2 bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md text-[var(--green)] font-semibold tracking-wide focus:border-[var(--cyan)] focus:outline-none"
-                />
-                <div className="text-[10px] text-right mt-0.5 text-[var(--text-muted)]">
-                  {editInvoiceDesc.length}/40 characters
+              {activeTab === 'fields' && (
+                <div className="flex items-center gap-1 bg-[var(--surface-1)] p-0.5 rounded border border-[var(--border)]">
+                  {(['all', 'high_risk', 'unresolved'] as const).map((filterMode) => (
+                    <button
+                      key={filterMode}
+                      onClick={() => setFieldFilter(filterMode)}
+                      className={`px-2 py-0.5 rounded text-[10px] uppercase transition-colors cursor-pointer ${
+                        fieldFilter === filterMode
+                          ? 'bg-[var(--cyan-bg)] text-[var(--cyan)] font-bold'
+                          : 'text-[var(--text-muted)] hover:text-white'
+                      }`}
+                    >
+                      {filterMode === 'all' ? 'All' : filterMode === 'high_risk' ? 'High-Risk Only' : 'Unresolved'}
+                    </button>
+                  ))}
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-1">
-                  MOBILE_DESC (Mobile Gate: 60–80 Chars)
-                </label>
-                <input
-                  type="text"
-                  value={editMobileDesc}
-                  onChange={(e) => setEditMobileDesc(e.target.value)}
-                  className="w-full px-3 py-2 bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md text-[var(--text-primary)] focus:border-[var(--cyan)] focus:outline-none font-sans"
-                />
-                <div className="text-[10px] text-right mt-0.5 text-[var(--text-muted)]">
-                  {editMobileDesc.length} characters (Target: 60-80)
+            {/* Modal Body */}
+            <div className="p-4 overflow-y-auto flex-1 space-y-3 bg-[var(--surface-1)]">
+              {loadingFields ? (
+                <div className="py-20 text-center text-[var(--text-muted)] space-y-3 font-mono">
+                  <div className="w-6 h-6 border-2 border-[var(--cyan)] border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="text-xs">LOADING FIELD LINEAGE & CITATIONS...</p>
                 </div>
-              </div>
-
-              {/* Extracted Specification Triplets */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase">
-                    STRUCTURED ATTRIBUTES (LOV CONTROLLED)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addAttributeSlot}
-                    className="text-[10px] text-[var(--cyan)] hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>ADD ATTRIBUTE</span>
-                  </button>
+              ) : activeTab === 'audit' ? (
+                /* Audit Trail Table */
+                <div className="space-y-3 font-mono text-xs">
+                  {fieldReviewData?.audit_trail?.length === 0 ? (
+                    <div className="p-8 text-center text-[var(--text-muted)] bg-[var(--surface-2)] rounded-lg border border-[var(--border)]">
+                      No manual audit records logged yet for this product.
+                    </div>
+                  ) : (
+                    <div className="border border-[var(--border)] rounded-lg overflow-hidden bg-[var(--surface-2)]">
+                      <table className="w-full text-left text-[11px]">
+                        <thead className="bg-[var(--surface-1)] border-b border-[var(--border)] text-[var(--text-muted)]">
+                          <tr>
+                            <th className="p-2.5">TIMESTAMP</th>
+                            <th className="p-2.5">REVIEWER</th>
+                            <th className="p-2.5">FIELD</th>
+                            <th className="p-2.5">ACTION</th>
+                            <th className="p-2.5">PREVIOUS &rarr; NEW</th>
+                            <th className="p-2.5">REASON</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--border)]">
+                          {fieldReviewData?.audit_trail?.map((a) => (
+                            <tr key={a.id} className="hover:bg-[var(--surface-1)]">
+                              <td className="p-2.5 text-[var(--text-muted)]">{a.timestamp.replace('T', ' ').slice(0, 19)}</td>
+                              <td className="p-2.5 text-[var(--cyan)] font-bold">{a.reviewer}</td>
+                              <td className="p-2.5 font-bold text-[var(--text-primary)]">{a.field_name}</td>
+                              <td className="p-2.5">
+                                <span className="px-1.5 py-0.5 rounded bg-[var(--surface-1)] border border-[var(--border)] uppercase font-bold text-[10px]">
+                                  {a.action}
+                                </span>
+                              </td>
+                              <td className="p-2.5">
+                                <span className="line-through text-rose-400 mr-1.5">{a.previous_value || 'None'}</span>
+                                &rarr; <span className="text-emerald-400 font-bold ml-1.5">{a.new_value || 'None'}</span>
+                              </td>
+                              <td className="p-2.5 text-[var(--text-secondary)]">{a.reason}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
+              ) : (
+                /* Field Evidence Cards */
+                <div className="space-y-3">
+                  {(fieldReviewData?.fields || [])
+                    .filter((f) => {
+                      if (fieldFilter === 'high_risk') return f.is_high_risk;
+                      if (fieldFilter === 'unresolved') return f.verification_status !== 'verified' && f.verification_status !== 'unknown';
+                      return true;
+                    })
+                    .map((f) => (
+                    <div
+                      key={f.field_name}
+                      className={`p-3.5 rounded-lg border transition-all ${
+                        f.is_high_risk
+                          ? 'bg-[var(--surface-2)] border-[var(--border-strong)]'
+                          : 'bg-[var(--surface-2)] border-[var(--border)] opacity-95'
+                      }`}
+                    >
+                      {/* Field Header */}
+                      <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-[var(--border)]">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-[var(--text-primary)]">
+                            {f.display_label}
+                          </span>
+                          {f.is_high_risk && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                              HIGH-RISK
+                            </span>
+                          )}
+                          <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                            ({f.field_name})
+                          </span>
+                        </div>
 
-                <div className="space-y-2">
-                  {editAttributes.map((attr, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="Label"
-                        value={attr.label}
-                        onChange={(e) => updateAttributeSlot(idx, 'label', e.target.value)}
-                        className="flex-1 px-2.5 py-1.5 bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md text-[var(--text-primary)]"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Value"
-                        value={attr.value}
-                        onChange={(e) => updateAttributeSlot(idx, 'value', e.target.value)}
-                        className="flex-1 px-2.5 py-1.5 bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md text-[var(--text-primary)]"
-                      />
-                      <input
-                        type="text"
-                        placeholder="UOM"
-                        value={attr.uom || ''}
-                        onChange={(e) => updateAttributeSlot(idx, 'uom', e.target.value)}
-                        className="w-20 px-2.5 py-1.5 bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md text-[var(--text-primary)]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeAttributeSlot(idx)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-[var(--red)] cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                        <div className="flex items-center gap-2">
+                          {renderStatusBadge(f.verification_status)}
+                          <span className="text-[11px] font-mono text-[var(--text-muted)]">
+                            Conf: {(f.confidence * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 3-Column Value Grid: Raw vs Candidate vs Normalized */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-[11px] font-mono mb-2.5">
+                        <div className="p-2 rounded bg-[var(--surface-1)] border border-[var(--border)]">
+                          <span className="text-[10px] text-[var(--text-muted)] block font-bold">RAW SUPPLIER INPUT</span>
+                          <span className="text-zinc-300 break-words">{f.raw_supplier_input || '—'}</span>
+                        </div>
+                        <div className="p-2 rounded bg-[var(--surface-1)] border border-[var(--border)]">
+                          <span className="text-[10px] text-amber-400/80 block font-bold">CURRENT CANDIDATE</span>
+                          <span className="text-amber-200 break-words">{f.candidate_value || '—'}</span>
+                        </div>
+                        <div className="p-2 rounded bg-[var(--surface-1)] border border-[var(--border)]">
+                          <span className="text-[10px] text-emerald-400/80 block font-bold">NORMALIZED STANDARD</span>
+                          <span className="text-emerald-300 font-bold break-words">{f.normalized_value || '—'}</span>
+                        </div>
+                      </div>
+
+                      {/* Evidence Lineage & Citation */}
+                      <div className="p-2 rounded bg-[var(--surface-1)] border border-[var(--border)] text-[11px] font-mono flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                        <div className="space-y-0.5 max-w-2xl">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-[var(--cyan)] font-bold uppercase">CITATION:</span>
+                            <span className="text-zinc-300">{f.source_citation || 'Supplier Input'}</span>
+                            {f.source_url && (
+                              <a
+                                href={f.source_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[var(--cyan)] hover:underline flex items-center gap-0.5 text-[10px]"
+                              >
+                                <ExternalLink className="w-2.5 h-2.5" />
+                                <span>Source Link</span>
+                              </a>
+                            )}
+                          </div>
+                          {f.source_excerpt && (
+                            <div className="text-[10px] text-[var(--text-muted)] italic truncate">
+                              &ldquo;{f.source_excerpt}&rdquo;
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Buttons for this Field */}
+                        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                          <button
+                            onClick={() => handleTriggerAction(f, 'approve')}
+                            className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors cursor-pointer flex items-center gap-1"
+                            title="Approve and verify field"
+                          >
+                            <Check className="w-2.5 h-2.5" /> APPROVE
+                          </button>
+                          <button
+                            onClick={() => handleTriggerAction(f, 'edit')}
+                            className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors cursor-pointer flex items-center gap-1"
+                            title="Edit value with audit reason"
+                          >
+                            <Edit3 className="w-2.5 h-2.5" /> EDIT
+                          </button>
+                          <button
+                            onClick={() => handleTriggerAction(f, 'reject')}
+                            className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-colors cursor-pointer flex items-center gap-1"
+                            title="Reject unsupported value"
+                          >
+                            <XCircle className="w-2.5 h-2.5" /> REJECT
+                          </button>
+                          <button
+                            onClick={() => handleTriggerAction(f, 'mark_unknown')}
+                            className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-zinc-500/10 hover:bg-zinc-500/20 text-zinc-400 border border-zinc-500/30 transition-colors cursor-pointer flex items-center gap-1"
+                            title="Mark unknown to leave blank in final delivery export"
+                          >
+                            <HelpCircle className="w-2.5 h-2.5" /> UNKNOWN
+                          </button>
+                        </div>
+                      </div>
+
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Action Prompt Sub-Modal */}
+            {activeFieldAction && (
+              <div className="p-4 border-t border-[var(--border)] bg-[var(--surface-2)] space-y-3 font-mono text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[var(--cyan)] uppercase">
+                      APPLY ACTION: {activeFieldAction.action.toUpperCase()}
+                    </span>
+                    <span className="text-[var(--text-muted)]">
+                      on field &lsquo;{activeFieldAction.displayLabel}&rsquo;
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setActiveFieldAction(null)}
+                    className="text-[var(--text-muted)] hover:text-white cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {activeFieldAction.action === 'edit' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-1">
+                      NEW NORMALIZED VALUE
+                    </label>
+                    <input
+                      type="text"
+                      value={actionNewValue}
+                      onChange={(e) => setActionNewValue(e.target.value)}
+                      placeholder="Enter verified new value..."
+                      className="w-full px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border-strong)] rounded text-[var(--text-primary)] focus:border-[var(--cyan)] focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-1">
+                    AUDIT REASON (Required by Compliance Policy)
+                  </label>
+                  <input
+                    type="text"
+                    value={actionReason}
+                    onChange={(e) => setActionReason(e.target.value)}
+                    placeholder="Provide specific justification or reference document..."
+                    className="w-full px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border-strong)] rounded text-[var(--text-primary)] focus:border-[var(--cyan)] focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    onClick={() => setActiveFieldAction(null)}
+                    className="px-3 py-1 rounded bg-[var(--surface-1)] hover:bg-[var(--border)] text-[var(--text-secondary)] border border-[var(--border)] cursor-pointer"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    onClick={handleExecuteAction}
+                    disabled={submittingAction}
+                    className="px-4 py-1 rounded bg-[var(--cyan-bg)] hover:opacity-90 text-[var(--cyan)] border border-[var(--cyan)] font-bold cursor-pointer"
+                  >
+                    {submittingAction ? 'RECORDING AUDIT...' : 'CONFIRM & PERSIST AUDIT'}
+                  </button>
+                </div>
               </div>
-
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-[var(--border)] bg-[var(--surface-1)] flex items-center justify-end gap-2 font-mono text-xs">
-              <button
-                type="button"
-                onClick={() => setEditingId(null)}
-                className="px-3.5 py-2 rounded-md bg-[var(--surface-2)] hover:bg-[var(--border-strong)] text-[var(--text-secondary)] border border-[var(--border)] cursor-pointer"
-              >
-                CANCEL
-              </button>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={handleSaveEdit}
-                className="px-4 py-2 rounded-md bg-[var(--cyan)] text-[#06201D] font-semibold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>{saving ? 'SAVING...' : 'SAVE & MARK VALIDATED'}</span>
-              </button>
-            </div>
+            )}
 
           </div>
         </div>

@@ -134,3 +134,34 @@ class UOMStandardizer:
             return val
         norm_uom = self.normalize_uom(uom)
         return f"{val} {norm_uom}"
+
+    def normalize_dimension_token(self, token: str) -> Tuple[str, str]:
+        """Normalize a single dimension token (e.g. '50.25 in', '24"', '16\'', '1/2"') to (value, uom)."""
+        if not token:
+            return "", ""
+        t = str(token).strip()
+        uom = "in"
+        if t.endswith("'") or "ft" in t.lower():
+            uom = "ft"
+            t = re.sub(r"(?i)'|\s*ft", "", t).strip()
+        elif t.endswith('"') or "in" in t.lower():
+            uom = "in"
+            t = re.sub(r'(?i)"|\s*in(?:ch(?:es)?)?', "", t).strip()
+        elif "mm" in t.lower():
+            uom = "mm"
+            t = re.sub(r"(?i)\s*mm", "", t).strip()
+        elif "cm" in t.lower():
+            uom = "cm"
+            t = re.sub(r"(?i)\s*cm", "", t).strip()
+        elif "yd" in t.lower():
+            uom = "yd"
+            t = re.sub(r"(?i)\s*yd", "", t).strip()
+
+        # If decimal, convert to fraction if unit is in or ft
+        try:
+            val_f = float(t)
+            if uom in ["in", "ft"]:
+                t = self.decimal_to_fraction(val_f)
+        except ValueError:
+            pass
+        return t, uom

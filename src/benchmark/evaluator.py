@@ -49,11 +49,11 @@ class ColumnMetricResult:
     """Evaluation metrics for a single column across matched ground truth records."""
     column_name: str
     column_index: int
-    exact_match_rate: float
-    normalized_match_rate: float
-    levenshtein_similarity: float
-    non_null_rate_enriched: float
-    non_null_rate_expected: float
+    exact_match_rate: Optional[float] = None
+    normalized_match_rate: Optional[float] = None
+    levenshtein_similarity: Optional[float] = None
+    non_null_rate_enriched: float = 0.0
+    non_null_rate_expected: Optional[float] = None
     sample_expected: str = ""
     sample_enriched: str = ""
 
@@ -65,20 +65,20 @@ class ColumnMetricResult:
 class DescriptionTierMetricResult:
     """Comprehensive NLP and structural metrics for a specific description tier."""
     tier_name: str
-    exact_match_rate: float
-    normalized_match_rate: float
-    levenshtein_similarity: float
-    token_jaccard: float
-    token_cosine: float
-    bleu_1: float
-    bleu_2: float
-    bleu_4: float
-    rouge_1_f1: float
-    rouge_2_f1: float
-    rouge_l_f1: float
-    avg_length_enriched: float
-    avg_length_expected: float
-    length_compliance_rate: float
+    exact_match_rate: Optional[float] = None
+    normalized_match_rate: Optional[float] = None
+    levenshtein_similarity: Optional[float] = None
+    token_jaccard: Optional[float] = None
+    token_cosine: Optional[float] = None
+    bleu_1: Optional[float] = None
+    bleu_2: Optional[float] = None
+    bleu_4: Optional[float] = None
+    rouge_1_f1: Optional[float] = None
+    rouge_2_f1: Optional[float] = None
+    rouge_l_f1: Optional[float] = None
+    avg_length_enriched: float = 0.0
+    avg_length_expected: Optional[float] = None
+    length_compliance_rate: float = 1.0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -92,17 +92,20 @@ class BenchmarkReport:
     total_ground_truth_records: int
     matched_benchmark_records: int
     schema_column_count: int
-    overall_exact_match_rate: float
-    overall_normalized_match_rate: float
-    overall_levenshtein_similarity: float
-    overall_bleu_score: float
-    overall_rouge_l_f1: float
-    triplet_attribute_f1: float
+    overall_exact_match_rate: Optional[float]
+    overall_normalized_match_rate: Optional[float]
+    overall_levenshtein_similarity: Optional[float]
+    overall_bleu_score: Optional[float]
+    overall_rouge_l_f1: Optional[float]
+    triplet_attribute_f1: Optional[float]
     hard_gates: HardGateSuiteReport
     confidence_summary: BatchConfidenceReport
     description_tier_metrics: Dict[str, DescriptionTierMetricResult]
     column_metrics: List[ColumnMetricResult]
     missing_fields_summary: Dict[str, float]
+    is_ground_truth_calibrated: bool = False
+    calibration_note: str = ""
+    schema_compliance_rate: float = 1.0
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -111,6 +114,9 @@ class BenchmarkReport:
             "total_ground_truth_records": self.total_ground_truth_records,
             "matched_benchmark_records": self.matched_benchmark_records,
             "schema_column_count": self.schema_column_count,
+            "is_ground_truth_calibrated": self.is_ground_truth_calibrated,
+            "calibration_note": self.calibration_note,
+            "schema_compliance_rate": self.schema_compliance_rate,
             "overall_scores": {
                 "exact_match_rate": self.overall_exact_match_rate,
                 "normalized_match_rate": self.overall_normalized_match_rate,
@@ -119,6 +125,7 @@ class BenchmarkReport:
                 "average_rouge_l_f1": self.overall_rouge_l_f1,
                 "triplet_attribute_f1": self.triplet_attribute_f1,
                 "mean_confidence_score": self.confidence_summary.mean_confidence,
+                "schema_compliance_rate": self.schema_compliance_rate,
             },
             "hard_rule_gates": self.hard_gates.to_dict(),
             "confidence_summary": self.confidence_summary.to_dict(),
@@ -132,21 +139,28 @@ class BenchmarkReport:
 
     def to_markdown(self) -> str:
         """Generate executive-ready Markdown benchmark summary."""
+        def fmt_pct(val: Optional[float]) -> str:
+            if val is None:
+                return "N/A (Uncalibrated)"
+            return f"{round(val * 100, 2)}%"
+
         lines = [
             "# UniHack Industrial Product Intelligence: QA Benchmarking Report",
             f"**Evaluation Timestamp**: {self.timestamp}  ",
-            f"**Total Catalog Records**: {self.total_catalog_records} | **Ground Truth Records**: {self.total_ground_truth_records} | **Columns**: {self.schema_column_count}",
+            f"**Total Catalog Records**: {self.total_catalog_records} | **Ground Truth Records**: {self.total_ground_truth_records} | **Matched Records**: {self.matched_benchmark_records} | **Columns**: {self.schema_column_count}",
+            f"**Calibration Status**: {'✅ CALIBRATED' if self.is_ground_truth_calibrated else '⚠️ NOT CALIBRATED'}",
+            f"*{self.calibration_note}*",
             "",
             "## 1. Executive Summary & Overall Scores",
             "",
             "| Metric Dimension | Benchmark Score | Target Threshold | Status |",
             "|:---|:---|:---|:---|",
-            f"| **Overall Exact Match Rate** | `{round(self.overall_exact_match_rate * 100, 2)}%` | $\\ge 85.0\\%$ | {'✅ PASS' if self.overall_exact_match_rate >= 0.85 else '⚠️ REVIEW'} |",
-            f"| **Normalized Match Rate** | `{round(self.overall_normalized_match_rate * 100, 2)}%` | $\\ge 90.0\\%$ | {'✅ PASS' if self.overall_normalized_match_rate >= 0.90 else '⚠️ REVIEW'} |",
-            f"| **Avg Levenshtein Similarity** | `{round(self.overall_levenshtein_similarity * 100, 2)}%` | $\\ge 90.0\\%$ | {'✅ PASS' if self.overall_levenshtein_similarity >= 0.90 else '⚠️ REVIEW'} |",
-            f"| **Avg Description BLEU Score** | `{round(self.overall_bleu_score * 100, 2)}%` | $\\ge 80.0\\%$ | {'✅ PASS' if self.overall_bleu_score >= 0.80 else '⚠️ REVIEW'} |",
-            f"| **Avg Description ROUGE-L F1** | `{round(self.overall_rouge_l_f1 * 100, 2)}%` | $\\ge 85.0\\%$ | {'✅ PASS' if self.overall_rouge_l_f1 >= 0.85 else '⚠️ REVIEW'} |",
-            f"| **Attribute Triplet F1 Score** | `{round(self.triplet_attribute_f1 * 100, 2)}%` | $\\ge 90.0\\%$ | {'✅ PASS' if self.triplet_attribute_f1 >= 0.90 else '⚠️ REVIEW'} |",
+            f"| **Overall Exact Match Rate** | `{fmt_pct(self.overall_exact_match_rate)}` | $\\ge 85.0\\%$ | {'✅ PASS' if (self.overall_exact_match_rate or 0) >= 0.85 and self.is_ground_truth_calibrated else '⚠️ UNCALIBRATED' if not self.is_ground_truth_calibrated else '❌ FAIL'} |",
+            f"| **Normalized Match Rate** | `{fmt_pct(self.overall_normalized_match_rate)}` | $\\ge 90.0\\%$ | {'✅ PASS' if (self.overall_normalized_match_rate or 0) >= 0.90 and self.is_ground_truth_calibrated else '⚠️ UNCALIBRATED' if not self.is_ground_truth_calibrated else '❌ FAIL'} |",
+            f"| **Avg Levenshtein Similarity** | `{fmt_pct(self.overall_levenshtein_similarity)}` | $\\ge 90.0\\%$ | {'✅ PASS' if (self.overall_levenshtein_similarity or 0) >= 0.90 and self.is_ground_truth_calibrated else '⚠️ UNCALIBRATED' if not self.is_ground_truth_calibrated else '❌ FAIL'} |",
+            f"| **Avg Description BLEU Score** | `{fmt_pct(self.overall_bleu_score)}` | $\\ge 80.0\\%$ | {'✅ PASS' if (self.overall_bleu_score or 0) >= 0.80 and self.is_ground_truth_calibrated else '⚠️ UNCALIBRATED' if not self.is_ground_truth_calibrated else '❌ FAIL'} |",
+            f"| **Avg Description ROUGE-L F1** | `{fmt_pct(self.overall_rouge_l_f1)}` | $\\ge 85.0\\%$ | {'✅ PASS' if (self.overall_rouge_l_f1 or 0) >= 0.85 and self.is_ground_truth_calibrated else '⚠️ UNCALIBRATED' if not self.is_ground_truth_calibrated else '❌ FAIL'} |",
+            f"| **Attribute Triplet F1 Score** | `{fmt_pct(self.triplet_attribute_f1)}` | $\\ge 90.0\\%$ | {'✅ PASS' if (self.triplet_attribute_f1 or 0) >= 0.90 and self.is_ground_truth_calibrated else '⚠️ UNCALIBRATED' if not self.is_ground_truth_calibrated else '❌ FAIL'} |",
             f"| **Mean Catalog Confidence** | `{round(self.confidence_summary.mean_confidence * 100, 2)}%` | $\\ge 85.0\\%$ | {'✅ PASS' if self.confidence_summary.mean_confidence >= 0.85 else '⚠️ REVIEW'} |",
             "",
             "## 2. Hard Rule Gates Compliance",
@@ -169,9 +183,9 @@ class BenchmarkReport:
 
         for tier, m in self.description_tier_metrics.items():
             lines.append(
-                f"| **`{tier}`** | {round(m.exact_match_rate * 100, 1)}% | {round(m.normalized_match_rate * 100, 1)}% | "
-                f"{round(m.levenshtein_similarity * 100, 1)}% | {round(m.token_jaccard * 100, 1)}% | "
-                f"{round(m.bleu_4 * 100, 1)}% | {round(m.rouge_l_f1 * 100, 1)}% | {round(m.length_compliance_rate * 100, 1)}% |"
+                f"| **`{tier}`** | {fmt_pct(m.exact_match_rate)} | {fmt_pct(m.normalized_match_rate)} | "
+                f"{fmt_pct(m.levenshtein_similarity)} | {fmt_pct(m.token_jaccard)} | "
+                f"{fmt_pct(m.bleu_4)} | {fmt_pct(m.rouge_l_f1)} | {round(m.length_compliance_rate * 100, 1)}% |"
             )
 
         lines.extend([
@@ -201,7 +215,6 @@ class BenchmarkReport:
             "|:---|:---|:---|:---|:---|:---|:---|",
         ])
 
-        # Pick top 25 prominent columns for clean markdown presentation
         prominent_cols = [
             "MANUFACTURER_NAME", "BRAND_NAME", "TRADE_NAME", "MANUFACTURER_PART_NUMBER",
             "Classpath", "Product Name", "UNSPSC", "INVOICE_DESC", "MOBILE_DESC",
@@ -216,10 +229,11 @@ class BenchmarkReport:
         for idx, col_name in enumerate(prominent_cols, 1):
             if col_name in col_dict:
                 cm = col_dict[col_name]
+                exp_pop_str = f"{round(cm.non_null_rate_expected * 100, 1)}%" if cm.non_null_rate_expected is not None else "N/A"
                 lines.append(
-                    f"| {idx} | `{col_name}` | {round(cm.exact_match_rate * 100, 1)}% | "
-                    f"{round(cm.normalized_match_rate * 100, 1)}% | {round(cm.levenshtein_similarity * 100, 1)}% | "
-                    f"{round(cm.non_null_rate_enriched * 100, 1)}% | {round(cm.non_null_rate_expected * 100, 1)}% |"
+                    f"| {idx} | `{col_name}` | {fmt_pct(cm.exact_match_rate)} | "
+                    f"{fmt_pct(cm.normalized_match_rate)} | {fmt_pct(cm.levenshtein_similarity)} | "
+                    f"{round(cm.non_null_rate_enriched * 100, 1)}% | {exp_pop_str} |"
                 )
 
         return "\n".join(lines)
@@ -279,10 +293,10 @@ class CatalogEvaluator:
         matched_pairs = self._match_records(enriched_df, gt_df)
 
         # 6. Compute Per-Column Metrics across matched benchmark records
-        col_metrics, overall_em, overall_nem, overall_lev = self._evaluate_column_metrics(matched_pairs)
+        col_metrics, overall_em, overall_nem, overall_lev = self._evaluate_column_metrics(matched_pairs, enriched_df)
 
         # 7. Compute Description Tier NLP Metrics
-        desc_metrics, avg_bleu, avg_rouge = self._evaluate_description_tiers(matched_pairs)
+        desc_metrics, avg_bleu, avg_rouge = self._evaluate_description_tiers(matched_pairs, enriched_df)
 
         # 8. Compute Triplet Attribute Precision / Recall / F1
         triplet_f1 = self._evaluate_triplets(matched_pairs)
@@ -292,23 +306,33 @@ class CatalogEvaluator:
 
         timestamp_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+        is_calibrated = len(matched_pairs) > 0 and len(gt_df) > 0
+        calib_note = (
+            f"Ground-truth benchmark evaluated against {len(matched_pairs)} matched reference records."
+            if is_calibrated
+            else "Not calibrated: no matched labelled ground truth. Exact match scoring requires ground truth records with matching MPNs."
+        )
+
         return BenchmarkReport(
             timestamp=timestamp_str,
             total_catalog_records=len(enriched_df),
             total_ground_truth_records=len(gt_df),
             matched_benchmark_records=len(matched_pairs),
             schema_column_count=len(enriched_df.columns),
-            overall_exact_match_rate=round(overall_em, 4),
-            overall_normalized_match_rate=round(overall_nem, 4),
-            overall_levenshtein_similarity=round(overall_lev, 4),
-            overall_bleu_score=round(avg_bleu, 4),
-            overall_rouge_l_f1=round(avg_rouge, 4),
-            triplet_attribute_f1=round(triplet_f1, 4),
+            overall_exact_match_rate=round(overall_em, 4) if overall_em is not None else None,
+            overall_normalized_match_rate=round(overall_nem, 4) if overall_nem is not None else None,
+            overall_levenshtein_similarity=round(overall_lev, 4) if overall_lev is not None else None,
+            overall_bleu_score=round(avg_bleu, 4) if avg_bleu is not None else None,
+            overall_rouge_l_f1=round(avg_rouge, 4) if avg_rouge is not None else None,
+            triplet_attribute_f1=round(triplet_f1, 4) if triplet_f1 is not None else None,
             hard_gates=hard_gate_report,
             confidence_summary=confidence_report,
             description_tier_metrics=desc_metrics,
             column_metrics=col_metrics,
-            missing_fields_summary=missing_fields
+            missing_fields_summary=missing_fields,
+            is_ground_truth_calibrated=is_calibrated,
+            calibration_note=calib_note,
+            schema_compliance_rate=1.0 if hard_gate_report.all_passed else round(hard_gate_report.passed_gates_count / max(1, hard_gate_report.total_gates), 4)
         )
 
     def _match_records(
@@ -316,57 +340,74 @@ class CatalogEvaluator:
         enriched_df: pd.DataFrame,
         gt_df: pd.DataFrame
     ) -> List[Tuple[Dict[str, Any], Dict[str, Any]]]:
-        """Pair enriched records with ground-truth records by MPN or SKU or index."""
+        """Pair enriched records with ground-truth records strictly by reliable identifiers (MPN/SKU/Part Number)."""
         pairs: List[Tuple[Dict[str, Any], Dict[str, Any]]] = []
-        if gt_df is None or len(gt_df) == 0:
+        if gt_df is None or len(gt_df) == 0 or len(enriched_df) == 0:
             return pairs
 
         gt_records = gt_df.to_dict(orient="records")
         enr_records = enriched_df.to_dict(orient="records")
 
-        # Index GT by MPN
-        gt_by_mpn = {}
+        # Index GT by reliable unique identifiers
+        gt_by_key = {}
         for r in gt_records:
-            mpn = str(r.get("MANUFACTURER_PART_NUMBER") or r.get("Mfg_Part_Num") or "").strip().upper()
-            if mpn:
-                gt_by_mpn[mpn] = r
+            for k in ("MANUFACTURER_PART_NUMBER", "Mfg_Part_Num", "PART_NUMBER", "SKU - MY_PART_NUMBER", "SKU"):
+                val = str(r.get(k) or "").strip().upper()
+                if val:
+                    gt_by_key[val] = r
 
-        # Match from enriched
+        # Match from enriched records
+        seen_gt_ids = set()
         for r in enr_records:
-            mpn = str(r.get("MANUFACTURER_PART_NUMBER") or r.get("Mfg_Part_Num") or "").strip().upper()
-            if mpn in gt_by_mpn:
-                pairs.append((r, gt_by_mpn[mpn]))
-
-        # Fallback if no MPN matched (e.g. compare first N rows if same size)
-        if not pairs and len(gt_records) > 0 and len(enr_records) > 0:
-            for idx in range(min(len(gt_records), len(enr_records))):
-                pairs.append((enr_records[idx], gt_records[idx]))
+            matched_gt = None
+            for k in ("MANUFACTURER_PART_NUMBER", "Mfg_Part_Num", "PART_NUMBER", "SKU - MY_PART_NUMBER", "SKU"):
+                val = str(r.get(k) or "").strip().upper()
+                if val and val in gt_by_key:
+                    matched_gt = gt_by_key[val]
+                    break
+            if matched_gt is not None:
+                gt_id = id(matched_gt)
+                if gt_id not in seen_gt_ids:
+                    pairs.append((r, matched_gt))
+                    seen_gt_ids.add(gt_id)
 
         return pairs
 
     def _evaluate_column_metrics(
         self,
-        matched_pairs: List[Tuple[Dict[str, Any], Dict[str, Any]]]
-    ) -> Tuple[List[ColumnMetricResult], float, float, float]:
+        matched_pairs: List[Tuple[Dict[str, Any], Dict[str, Any]]],
+        enriched_df: pd.DataFrame
+    ) -> Tuple[List[ColumnMetricResult], Optional[float], Optional[float], Optional[float]]:
         """Evaluate match rates for all 252 columns across matched records."""
         col_results: List[ColumnMetricResult] = []
         headers = EXPECTED_252_COLUMNS
+        total_enr_rows = max(1, len(enriched_df))
 
         if not matched_pairs:
-            # Return baseline schema columns with 1.0/0.0
-            for idx, col in enumerate(headers):
+            # When uncalibrated: return real enriched non-null rates, but match rates as None
+            for idx, col in enumerate(headers, 1):
+                enr_non_null = 0
+                sample_enr = ""
+                if col in enriched_df.columns:
+                    non_null_series = enriched_df[col].dropna()
+                    enr_non_null = int((non_null_series.astype(str).str.strip() != "").sum())
+                    if not non_null_series.empty:
+                        sample_enr = str(non_null_series.iloc[0])[:60]
+
                 col_results.append(
                     ColumnMetricResult(
                         column_name=col,
-                        column_index=idx + 1,
-                        exact_match_rate=1.0,
-                        normalized_match_rate=1.0,
-                        levenshtein_similarity=1.0,
-                        non_null_rate_enriched=1.0,
-                        non_null_rate_expected=1.0
+                        column_index=idx,
+                        exact_match_rate=None,
+                        normalized_match_rate=None,
+                        levenshtein_similarity=None,
+                        non_null_rate_enriched=round(enr_non_null / total_enr_rows, 4),
+                        non_null_rate_expected=None,
+                        sample_expected="",
+                        sample_enriched=sample_enr
                     )
                 )
-            return col_results, 1.0, 1.0, 1.0
+            return col_results, None, None, None
 
         total_pairs = len(matched_pairs)
         em_list = []
@@ -429,16 +470,17 @@ class CatalogEvaluator:
                 )
             )
 
-        mean_em = sum(em_list) / len(em_list) if em_list else 0.0
-        mean_nem = sum(nem_list) / len(nem_list) if nem_list else 0.0
-        mean_lev = sum(lev_list) / len(lev_list) if lev_list else 0.0
+        mean_em = sum(em_list) / len(em_list) if em_list else None
+        mean_nem = sum(nem_list) / len(nem_list) if nem_list else None
+        mean_lev = sum(lev_list) / len(lev_list) if lev_list else None
 
         return col_results, mean_em, mean_nem, mean_lev
 
     def _evaluate_description_tiers(
         self,
-        matched_pairs: List[Tuple[Dict[str, Any], Dict[str, Any]]]
-    ) -> Tuple[Dict[str, DescriptionTierMetricResult], float, float]:
+        matched_pairs: List[Tuple[Dict[str, Any], Dict[str, Any]]],
+        enriched_df: pd.DataFrame
+    ) -> Tuple[Dict[str, DescriptionTierMetricResult], Optional[float], Optional[float]]:
         """Compute NLP metrics across all description tiers."""
         tiers = [
             "INVOICE_DESC",
@@ -452,29 +494,42 @@ class CatalogEvaluator:
         tier_results: Dict[str, DescriptionTierMetricResult] = {}
         all_bleus = []
         all_rouges = []
+        total_enr = max(1, len(enriched_df))
 
         for tier in tiers:
             if not matched_pairs:
-                # Default baseline
+                # Compute actual length and compliance from enriched dataframe without hallucinating match scores
+                enr_series = enriched_df[tier].dropna().astype(str).str.strip() if tier in enriched_df.columns else pd.Series([], dtype=str)
+                avg_len = float(enr_series.str.len().mean()) if not enr_series.empty else 0.0
+
+                compliance_count = 0
+                for val in enr_series:
+                    if tier == "INVOICE_DESC":
+                        if len(val) <= 40 and val.isupper():
+                            compliance_count += 1
+                    elif tier == "MOBILE_DESC":
+                        if 60 <= len(val) <= 80:
+                            compliance_count += 1
+                    else:
+                        compliance_count += 1
+
                 tier_results[tier] = DescriptionTierMetricResult(
                     tier_name=tier,
-                    exact_match_rate=1.0,
-                    normalized_match_rate=1.0,
-                    levenshtein_similarity=1.0,
-                    token_jaccard=1.0,
-                    token_cosine=1.0,
-                    bleu_1=1.0,
-                    bleu_2=1.0,
-                    bleu_4=1.0,
-                    rouge_1_f1=1.0,
-                    rouge_2_f1=1.0,
-                    rouge_l_f1=1.0,
-                    avg_length_enriched=40.0,
-                    avg_length_expected=40.0,
-                    length_compliance_rate=1.0
+                    exact_match_rate=None,
+                    normalized_match_rate=None,
+                    levenshtein_similarity=None,
+                    token_jaccard=None,
+                    token_cosine=None,
+                    bleu_1=None,
+                    bleu_2=None,
+                    bleu_4=None,
+                    rouge_1_f1=None,
+                    rouge_2_f1=None,
+                    rouge_l_f1=None,
+                    avg_length_enriched=round(avg_len, 1),
+                    avg_length_expected=None,
+                    length_compliance_rate=round(compliance_count / max(1, len(enr_series)), 4)
                 )
-                all_bleus.append(1.0)
-                all_rouges.append(1.0)
                 continue
 
             em_sum = nem_sum = lev_sum = jacc_sum = cos_sum = 0.0
@@ -538,18 +593,18 @@ class CatalogEvaluator:
                 length_compliance_rate=round(compliance_count / total, 4)
             )
 
-        mean_bleu = sum(all_bleus) / len(all_bleus) if all_bleus else 0.0
-        mean_rouge = sum(all_rouges) / len(all_rouges) if all_rouges else 0.0
+        mean_bleu = sum(all_bleus) / len(all_bleus) if all_bleus else None
+        mean_rouge = sum(all_rouges) / len(all_rouges) if all_rouges else None
 
         return tier_results, mean_bleu, mean_rouge
 
     def _evaluate_triplets(
         self,
         matched_pairs: List[Tuple[Dict[str, Any], Dict[str, Any]]]
-    ) -> float:
-        """Calculate average triplet attribute F1 score."""
+    ) -> Optional[float]:
+        """Calculate average triplet attribute F1 score across matched ground-truth records."""
         if not matched_pairs:
-            return 1.0
+            return None
 
         f1_list = []
         for enr_row, gt_row in matched_pairs:
@@ -573,7 +628,7 @@ class CatalogEvaluator:
             res = evaluate_triplet_attributes(exp_triplets, pred_triplets)
             f1_list.append(res["f1"])
 
-        return sum(f1_list) / len(f1_list) if f1_list else 0.0
+        return sum(f1_list) / len(f1_list) if f1_list else None
 
     def _compute_missing_rates(self, df: pd.DataFrame) -> Dict[str, float]:
         """Compute percentage of empty / null values per column."""
@@ -582,8 +637,12 @@ class CatalogEvaluator:
         if total == 0:
             return missing
 
-        for col in df.columns:
-            null_count = df[col].isna().sum() + (df[col].astype(str).str.strip() == "").sum()
-            missing[col] = round((null_count / total) * 100.0, 2)
+        for col in EXPECTED_252_COLUMNS:
+            if col in df.columns:
+                series = df[col]
+                null_cnt = series.isna().sum() + (series.astype(str).str.strip() == "").sum()
+                missing[col] = round(float(null_cnt) / total, 4)
+            else:
+                missing[col] = 1.0
 
         return missing

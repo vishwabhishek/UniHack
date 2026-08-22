@@ -1,0 +1,20 @@
+[
+  {
+    "chunk_id": "chk_shc1023_1_6e66fa6a",
+    "source_id": "src_shc1023_46f60df1",
+    "mpn": "SHC1023",
+    "brand": "HUBBELL\u00ae",
+    "manufacturer": "Hubbell Incorporated",
+    "section_title": "Technical Specifications",
+    "page_number": 1,
+    "text_content": "Fitting Type: Cord Grip Connector\nConnection Type: Male NPT\nMaterial: Aluminum\nNominal Size: 1/2 in\nEnvironmental Rating: NEMA 4, 4X, 12, 13",
+    "key_value_specs": {
+      "Fitting Type": "Cord Grip Connector",
+      "Connection Type": "Male NPT",
+      "Material": "Aluminum",
+      "Nominal Size": "1/2 in",
+      "Environmental Rating": "NEMA 4, 4X, 12, 13"
+    },
+    "chunk_hash": "6e66fa6ac1a43027"
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "chunk_id": "chk_u008lfa_1_f146858b",
+    "source_id": "src_u008lfa_5734924d",
+    "mpn": "U008LFA",
+    "brand": "SHARKBITE\u00ae",
+    "manufacturer": "Reliance Worldwide Corporation",
+    "section_title": "General Specifications",
+    "page_number": 1,
+    "text_content": "RELIANCE WORLDWIDE CORPORATION SPECIFICATION SHEET\nPRODUCT: SharkBite Brass Push-to-Connect Straight Coupling",
+    "key_value_specs": {
+      "PRODUCT": "SharkBite Brass Push-to-Connect Straight Coupling"
+    },
+    "chunk_hash": "f146858b2cb3adef"
+  },
+  {
+    "chunk_id": "chk_u008lfa_2_ab932b0d",
+    "source_id": "src_u008lfa_5734924d",
+    "mpn": "U008LFA",
+    "brand": "SHARKBITE\u00ae",
+    "manufacturer": "Reliance Worldwide Corporation",
+    "section_title": "PRODUCT SPECIFICATIONS",
+    "page_number": 1,
+    "text_content": "Fitting Type: Coupling\nConnection Type: Push-to-Connect\nMaterial: Lead-Free Brass\nNominal Size: 1/2 in\nPressure Rating: 200 psi\nMax Temperature: 200\u00b0F",
+    "key_value_specs": {
+      "Fitting Type": "Coupling",
+      "Connection Type": "Push-to-Connect",
+      "Material": "Lead-Free Brass",
+      "Nominal Size": "1/2 in",
+      "Pressure Rating": "200 psi",
+      "Max Temperature": "200\u00b0F"
+    },
+    "chunk_hash": "ab932b0d3184bd56"
+  },
+  {
+    "chunk_id": "chk_u008lfa_3_b6b7e2f6",
+    "source_id": "src_u008lfa_5734924d",
+    "mpn": "U008LFA",
+    "brand": "SHARKBITE\u00ae",
+    "manufacturer": "Reliance Worldwide Corporation",
+    "section_title": "CERTIFICATIONS",
+    "page_number": 1,
+    "text_content": "NSF/ANSI 61, NSF/ANSI 372, ASSE 1061, CSA B125.3",
+    "key_value_specs": {},
+    "chunk_hash": "b6b7e2f6aa0eb126"
+  }
+]

@@ -13,19 +13,50 @@ from src.pipeline.delivery_mapper import DeliveryMapper
 router = APIRouter(prefix="/api/export", tags=["Export"])
 
 
+import hashlib
+from ..db.repositories.exports import export_repo
+from ..db.repositories.audit import audit_repo
+
+
 @router.get("/csv")
 def export_catalog_csv(
     status: Optional[str] = Query(None, description="Optional status filter (e.g. Validated, Enriched)"),
     search: Optional[str] = Query(None, description="Optional search filter"),
     current_user: User = Depends(get_current_user)
 ):
-    """Stream full 252-column CSV file for the active or filtered catalog."""
+    """Stream full 252-column CSV file for the active or filtered catalog with audit tracking."""
+    df = catalog_state.get_export_dataframe(status=status, search=search, sanitize_formulas=True)
     csv_bytes = catalog_state.get_export_csv_bytes(status=status, search=search)
+    checksum = hashlib.sha256(csv_bytes).hexdigest()
+
+    try:
+        export_repo.record_export(
+            user_email=current_user.email,
+            user_id=current_user.id,
+            schema_version="v1.0.0 (252-Column Unilog Delivery)",
+            product_count=len(df),
+            checksum_sha256=checksum,
+            filters={"status": status, "search": search},
+        )
+        audit_repo.record_action(
+            user_email=current_user.email,
+            user_id=current_user.id,
+            role=current_user.role,
+            action="CATALOG_EXPORT_CSV",
+            entity_type="export",
+            entity_id=checksum[:12],
+            after_state={"product_count": len(df), "checksum_sha256": checksum, "filters": {"status": status, "search": search}},
+            reason="User downloaded 252-column CSV delivery export",
+        )
+    except Exception:
+        pass
+
     return Response(
         content=csv_bytes,
         media_type="text/csv; charset=utf-8",
         headers={
-            "Content-Disposition": 'attachment; filename="unilog_enriched_catalog_252_columns.csv"'
+            "Content-Disposition": 'attachment; filename="unilog_enriched_catalog_252_columns.csv"',
+            "X-Export-Checksum": checksum,
         }
     )
 
@@ -36,13 +67,29 @@ def export_catalog_excel(
     search: Optional[str] = Query(None, description="Optional search filter"),
     current_user: User = Depends(get_current_user)
 ):
-    """Stream full 252-column Microsoft Excel (.xlsx) file."""
+    """Stream full 252-column Microsoft Excel (.xlsx) file with audit tracking."""
+    df = catalog_state.get_export_dataframe(status=status, search=search, sanitize_formulas=True)
     xlsx_bytes = catalog_state.get_export_excel_bytes(status=status, search=search)
+    checksum = hashlib.sha256(xlsx_bytes).hexdigest()
+
+    try:
+        export_repo.record_export(
+            user_email=current_user.email,
+            user_id=current_user.id,
+            schema_version="v1.0.0 (252-Column Unilog Delivery)",
+            product_count=len(df),
+            checksum_sha256=checksum,
+            filters={"status": status, "search": search},
+        )
+    except Exception:
+        pass
+
     return Response(
         content=xlsx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
-            "Content-Disposition": 'attachment; filename="unilog_enriched_catalog_252_columns.xlsx"'
+            "Content-Disposition": 'attachment; filename="unilog_enriched_catalog_252_columns.xlsx"',
+            "X-Export-Checksum": checksum,
         }
     )
 
@@ -74,3 +121,17 @@ def get_column_definitions(current_user: User = Depends(get_current_user)):
         "headers": headers,
         "groups": groups
     }
+
+
+@router.get("/history")
+def get_export_history(
+    limit: int = Query(25, ge=1, le=100),
+    current_user: User = Depends(get_current_user)
+):
+    """Retrieve historical export events, cryptographic checksums, and delivery metadata."""
+    exports = export_repo.list_exports(limit=limit)
+    return {
+        "total_exports": len(exports),
+        "exports": exports,
+    }
+

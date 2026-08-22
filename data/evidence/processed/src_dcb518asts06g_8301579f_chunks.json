@@ -1,0 +1,34 @@
+[
+  {
+    "chunk_id": "chk_dcb518asts06g_1_c1cafc8c",
+    "source_id": "src_dcb518asts06g_8301579f",
+    "mpn": "DCB518ASTS06G",
+    "brand": "DIABLO\u00ae",
+    "manufacturer": "Freud America, Inc.",
+    "section_title": "Technical Specifications",
+    "page_number": 1,
+    "text_content": "Abrasive Type: Sanding Belt\nMaterial: Zirconia Alumina\nBelt Width: 1/2 in\nBelt Length: 18 in\nGrit: Assorted\nBacking Material: Cloth\nPackage Quantity: 6",
+    "key_value_specs": {
+      "Abrasive Type": "Sanding Belt",
+      "Material": "Zirconia Alumina",
+      "Belt Width": "1/2 in",
+      "Belt Length": "18 in",
+      "Grit": "Assorted",
+      "Backing Material": "Cloth",
+      "Package Quantity": "6"
+    },
+    "chunk_hash": "c1cafc8c9860c0e0"
+  },
+  {
+    "chunk_id": "chk_dcb518asts06g_2_d95e995f",
+    "source_id": "src_dcb518asts06g_8301579f",
+    "mpn": "DCB518ASTS06G",
+    "brand": "DIABLO\u00ae",
+    "manufacturer": "Freud America, Inc.",
+    "section_title": "Application Details",
+    "page_number": 1,
+    "text_content": "Premium Zirconia Alumina grain blend for aggressive material removal and extended sanding belt life on metal, wood, and plastic.",
+    "key_value_specs": {},
+    "chunk_hash": "d95e995f2419f6b3"
+  }
+]

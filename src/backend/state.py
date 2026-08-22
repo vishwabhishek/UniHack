@@ -6,9 +6,12 @@ search, HITL triage, and atomic updates.
 
 import io
 import csv
+import logging
 import threading
 from typing import Dict, List, Optional, Any, Tuple
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 from .config import settings
 from src.pipeline.models import RawProduct, EnrichedProduct, AttributeTriple, PhysicalDimensions
@@ -23,6 +26,16 @@ class CatalogState:
     _instance = None
     _lock = threading.Lock()
 
+    HIGH_RISK_FIELDS: List[str] = [
+        "mfg_part_number",
+        "brand_name",
+        "manufacturer_name",
+        "classpath",
+        "unspsc",
+        "invoice_desc",
+        "short_desc"
+    ]
+
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:
@@ -36,7 +49,7 @@ class CatalogState:
             return cls._instance
 
     def initialize(self):
-        """Pre-load all 1,000 catalog products into indexed memory."""
+        """Pre-load all 1,000 catalog products into indexed memory from persistent SQLite (or seed from raw CSV)."""
         if getattr(self, "_initialized", False):
             return
 
@@ -53,29 +66,37 @@ class CatalogState:
             self._review_ids: set = set()
             self._cached_benchmark = None
 
-            # Load raw input CSV
-            if not settings.raw_input_path.exists():
-                raise FileNotFoundError(f"Raw input dataset not found at {settings.raw_input_path}")
+            from .db.repositories.products import product_repo
+            db_count = product_repo.count_products()
 
-            df_raw = pd.read_csv(settings.raw_input_path)
-            raw_products: List[RawProduct] = []
-            for idx, row in df_raw.iterrows():
-                row_dict = {
-                    "mfg_part_num": str(row.get("Mfg_Part_Num", "") or "").strip(),
-                    "part_desc": str(row.get("Part_Desc", "") or "").strip(),
-                    "e1_brand": str(row.get("E1_Brand", "") or "").strip() or None,
-                    "unilog_brand": str(row.get("Unilog_Brand", "") or "").strip() or None,
-                    "dib_brand": str(row.get("DIB_Brand", "") or "").strip() or None,
-                    "part_manuf": str(row.get("Part_Manuf", "") or "").strip() or None,
-                    "row_id": int(idx + 1)
-                }
-                raw_products.append(RawProduct(**row_dict))
+            if db_count >= 1000:
+                logger.info(f"Restoring catalog from SQLite persistent database ({db_count} records)...")
+                self._restore_from_sqlite()
+            else:
+                # Load raw input CSV & populate SQLite
+                if not settings.raw_input_path.exists():
+                    raise FileNotFoundError(f"Raw input dataset not found at {settings.raw_input_path}")
 
-            # Process all 1,000 items with EnrichmentEngine
-            enriched_products = self.engine.process_batch(raw_products)
+                df_raw = pd.read_csv(settings.raw_input_path)
+                raw_products: List[RawProduct] = []
+                for idx, row in df_raw.iterrows():
+                    row_dict = {
+                        "mfg_part_num": str(row.get("Mfg_Part_Num", "") or "").strip(),
+                        "part_desc": str(row.get("Part_Desc", "") or "").strip(),
+                        "e1_brand": str(row.get("E1_Brand", "") or "").strip() or None,
+                        "unilog_brand": str(row.get("Unilog_Brand", "") or "").strip() or None,
+                        "dib_brand": str(row.get("DIB_Brand", "") or "").strip() or None,
+                        "part_manuf": str(row.get("Part_Manuf", "") or "").strip() or None,
+                        "row_id": int(idx + 1)
+                    }
+                    raw_products.append(RawProduct(**row_dict))
 
-            for prod in enriched_products:
-                self._index_product(prod)
+                # Process all 1,000 items with EnrichmentEngine
+                enriched_products = self.engine.process_batch(raw_products)
+                self._populate_sqlite_from_products(enriched_products)
+
+                for prod in enriched_products:
+                    self._index_product(prod)
 
             # Ensure output directory and 252-column export file exist
             settings.output_dir.mkdir(parents=True, exist_ok=True)
@@ -86,9 +107,267 @@ class CatalogState:
                 from .rag_engine import rag_engine
                 rag_engine.index_catalog(self._products_list)
             except Exception as ex:
-                print(f"Warning: LlamaIndex RAG indexing deferred or encountered issue: {ex}")
+                logger.warning(f"LlamaIndex RAG indexing deferred or encountered issue: {ex}")
 
             self._initialized = True
+
+    def _populate_sqlite_from_products(self, enriched_products: List[EnrichedProduct]):
+        """Persist baseline enriched products and raw supplier inputs into SQLite database."""
+        try:
+            from .db.connection import get_db_connection
+            import json, time
+
+            now = time.time()
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                for prod in self._products_list:
+                    pid = str(prod.raw.row_id or 1)
+                    row_id = prod.raw.row_id or 1
+                    conflicts_json = json.dumps(prod.conflicts) if hasattr(prod, "conflicts") and prod.conflicts else "[]"
+                    
+                    status_raw = (prod.status or "enriched").strip().lower()
+                    if status_raw in ["flagged", "needs human review", "needs_human_review", "review_required"]:
+                        db_status = "review_required"
+                    elif status_raw in ["validated", "approved"]:
+                        db_status = "validated"
+                    elif status_raw in ["draft", "raw"]:
+                        db_status = "raw"
+                    else:
+                        db_status = "enriched"
+
+                    # Main product record
+                    cursor.execute(
+                        """
+                        INSERT INTO products (
+                            id, sku, mpn, status, brand, manufacturer,
+                            class_path, unspsc, invoice_desc, mobile_desc,
+                            short_desc, long_desc, marketing_desc, confidence_score,
+                            conflicts_json, review_required, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            status = excluded.status,
+                            brand = excluded.brand,
+                            manufacturer = excluded.manufacturer,
+                            class_path = excluded.class_path,
+                            unspsc = excluded.unspsc,
+                            invoice_desc = excluded.invoice_desc,
+                            mobile_desc = excluded.mobile_desc,
+                            short_desc = excluded.short_desc,
+                            long_desc = excluded.long_desc,
+                            marketing_desc = excluded.marketing_desc,
+                            confidence_score = excluded.confidence_score,
+                            conflicts_json = excluded.conflicts_json,
+                            review_required = excluded.review_required,
+                            updated_at = excluded.updated_at;
+                        """,
+                        (
+                            pid,
+                            prod.raw.mfg_part_num or prod.mfg_part_number,
+                            prod.mfg_part_number,
+                            db_status,
+                            prod.brand_name,
+                            prod.manufacturer_name,
+                            prod.classpath,
+                            prod.unspsc,
+                            prod.invoice_desc,
+                            prod.mobile_desc,
+                            prod.short_desc,
+                            prod.long_desc1,
+                            prod.marketing_description,
+                            prod.confidence_score,
+                            conflicts_json,
+                            1 if (db_status == "review_required" or prod.confidence_score < 0.85) else 0,
+                            now,
+                            now
+                        )
+                    )
+
+                    # Raw supplier inputs
+                    cursor.execute(
+                        """
+                        INSERT INTO raw_supplier_inputs (
+                            product_id, row_id, raw_mfg_part_num, raw_part_desc,
+                            e1_brand, unilog_brand, dib_brand, part_manuf, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(product_id) DO UPDATE SET
+                            row_id = excluded.row_id,
+                            raw_mfg_part_num = excluded.raw_mfg_part_num,
+                            raw_part_desc = excluded.raw_part_desc,
+                            e1_brand = excluded.e1_brand,
+                            unilog_brand = excluded.unilog_brand,
+                            dib_brand = excluded.dib_brand,
+                            part_manuf = excluded.part_manuf;
+                        """,
+                        (
+                            pid,
+                            row_id,
+                            prod.raw.mfg_part_num,
+                            prod.raw.part_desc,
+                            prod.raw.e1_brand,
+                            prod.raw.unilog_brand,
+                            prod.raw.dib_brand,
+                            prod.raw.part_manuf,
+                            now
+                        )
+                    )
+
+                    # Attributes
+                    for attr in (prod.attributes or []):
+                        if attr.label:
+                            fname = f"attr_{attr.label}"
+                            fid = f"fld_{pid}_{attr.label.lower()}"
+                            is_ver = bool(attr.provenance and attr.provenance.verified)
+                            cursor.execute(
+                                """
+                                INSERT INTO enriched_fields (
+                                    id, product_id, field_name, candidate_value, normalized_value,
+                                    status, confidence, dictionary_path, is_approved, updated_by, updated_at
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                ON CONFLICT(product_id, field_name) DO UPDATE SET
+                                    candidate_value = excluded.candidate_value,
+                                    normalized_value = excluded.normalized_value,
+                                    status = excluded.status,
+                                    confidence = excluded.confidence,
+                                    dictionary_path = excluded.dictionary_path,
+                                    is_approved = excluded.is_approved,
+                                    updated_at = excluded.updated_at;
+                                """,
+                                (
+                                    fid, pid, fname, attr.value, attr.value,
+                                    "verified" if is_ver else "candidate",
+                                    attr.provenance.confidence if attr.provenance else 1.0,
+                                    None,
+                                    1 if is_ver else 0,
+                                    "pipeline",
+                                    now
+                                )
+                            )
+                conn.commit()
+                logger.info("Seeded 1,000 catalog products into SQLite persistence database.")
+        except Exception as e:
+            logger.warning(f"Failed to populate SQLite from products: {e}")
+
+    def _restore_from_sqlite(self):
+        """Restore all catalog products, review actions, and field evidence from SQLite."""
+        try:
+            from .db.repositories.products import product_repo
+            from .db.repositories.reviews import review_repo
+            from src.pipeline.models import (
+                RawProduct, EnrichedProduct, AttributeTriple, PhysicalDimensions,
+                EvidenceRecord, AuditRecord, FieldProvenance
+            )
+            import time
+
+            db_products = product_repo.load_all_products_with_fields()
+            if not db_products:
+                return
+
+            self._products_list = []
+            self._by_id = {}
+            self._delivery_by_id = {}
+            self._review_ids = set()
+
+            for db_p in db_products:
+                pid = str(db_p["id"])
+                raw_info = db_p.get("raw_input") or {}
+                raw_prod = RawProduct(
+                    mfg_part_num=raw_info.get("raw_mfg_part_num", db_p.get("mfg_part_num", "")),
+                    part_desc=raw_info.get("raw_part_desc", ""),
+                    e1_brand=raw_info.get("e1_brand"),
+                    unilog_brand=raw_info.get("unilog_brand"),
+                    dib_brand=raw_info.get("dib_brand"),
+                    part_manuf=raw_info.get("part_manuf"),
+                    row_id=raw_info.get("row_id", int(pid) if pid.isdigit() else 1)
+                )
+
+                # Process baseline template using enrichment engine
+                base_prod = self.engine.process_single(raw_prod)
+                
+                # Apply SQLite stored values
+                raw_status = (db_p.get("status") or "").strip().lower()
+                if raw_status == "validated":
+                    base_prod.status = "Validated"
+                elif raw_status == "enriched":
+                    base_prod.status = "Enriched"
+                elif raw_status in ("review_required", "flagged"):
+                    base_prod.status = "Flagged"
+                elif raw_status == "raw":
+                    base_prod.status = "Draft"
+                else:
+                    base_prod.status = db_p.get("status", base_prod.status)
+
+                base_prod.confidence_score = float(db_p.get("confidence") or base_prod.confidence_score)
+                base_prod.brand_name = db_p.get("brand") or base_prod.brand_name
+                base_prod.manufacturer_name = db_p.get("manufacturer") or base_prod.manufacturer_name
+                base_prod.classpath = db_p.get("classpath") or base_prod.classpath
+                base_prod.unspsc = db_p.get("unspsc") or base_prod.unspsc
+                base_prod.invoice_desc = db_p.get("invoice_desc") or base_prod.invoice_desc
+                base_prod.mobile_desc = db_p.get("mobile_desc") or base_prod.mobile_desc
+                base_prod.short_desc = db_p.get("short_desc") or base_prod.short_desc
+                base_prod.long_desc1 = db_p.get("long_desc") or base_prod.long_desc1
+                base_prod.marketing_desc = db_p.get("marketing_desc") or base_prod.marketing_desc
+                base_prod.validation_flags = db_p.get("data_conflicts", base_prod.validation_flags)
+
+                # Apply enriched fields from DB
+                for ef in db_p.get("enriched_fields", []):
+                    fname = ef.get("field_name", "")
+                    fval = ef.get("normalized_value") or ef.get("candidate_value") or ""
+                    fstatus = ef.get("status", "candidate")
+
+                    if fname == "mfg_part_number" and fval:
+                        base_prod.mfg_part_number = fval
+                    elif fname == "brand_name" and fval:
+                        base_prod.brand_name = fval
+                    elif fname == "manufacturer_name" and fval:
+                        base_prod.manufacturer_name = fval
+                    elif fname == "classpath" and fval:
+                        base_prod.classpath = fval
+                    elif fname == "unspsc" and fval:
+                        base_prod.unspsc = fval
+                    elif fname == "invoice_desc" and fval:
+                        base_prod.invoice_desc = fval
+                    elif fname == "mobile_desc" and fval:
+                        base_prod.mobile_desc = fval
+                    elif fname == "short_desc" and fval:
+                        base_prod.short_desc = fval
+                    elif fname == "long_desc1" and fval:
+                        base_prod.long_desc1 = fval
+                    elif fname.startswith("attr_"):
+                        attr_lbl = fname.replace("attr_", "")
+                        for attr in base_prod.attributes:
+                            if attr.label.lower() == attr_lbl.lower():
+                                attr.value = fval
+                                if fstatus in ("verified", "approved"):
+                                    if attr.provenance:
+                                        attr.provenance.verified = True
+                                        attr.provenance.confidence = 1.0
+                                elif fstatus in ("rejected", "unknown"):
+                                    attr.value = ""
+
+                # Load review actions into audit trail
+                rev_actions = review_repo.list_actions_for_product(pid)
+                if rev_actions:
+                    base_prod.audit_trail = [
+                        AuditRecord(
+                            id=ra["id"],
+                            field_name=ra["field_name"],
+                            reviewer=ra["user_email"],
+                            timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ra["created_at"])),
+                            previous_value=ra.get("old_value", ""),
+                            new_value=ra.get("new_value", ""),
+                            action=ra["action_type"],
+                            reason=ra.get("reason", "")
+                        )
+                        for ra in rev_actions
+                    ]
+
+                self._index_product(base_prod)
+
+            self._sync_output_csv()
+            logger.info(f"Successfully restored {len(self._products_list)} catalog products from SQLite.")
+        except Exception as e:
+            logger.error(f"Error restoring catalog from SQLite: {e}")
+            raise
 
     def _index_product(self, prod: EnrichedProduct):
         """Index product across multiple lookup keys and delivery mapping."""
@@ -347,6 +626,406 @@ class CatalogState:
 
         return prod
 
+    def get_product_field_review(self, key: str):
+        """Generate field-level evidence review items with raw, candidate, normalized values, and audit history."""
+        if not getattr(self, "_initialized", False):
+            self.initialize()
+        prod = self._by_id.get(str(key).strip())
+        if not prod:
+            return None
+
+        from .schemas import (
+            FieldReviewItemSchema,
+            ProductFieldReviewResponse,
+            AuditRecordSchema
+        )
+        from src.pipeline.models import AuditRecord
+
+        fields: List[FieldReviewItemSchema] = []
+        high_risk_unresolved = 0
+
+        # Helper to construct FieldReviewItemSchema
+        def build_field_item(
+            field_name: str,
+            display_label: str,
+            raw_val: str,
+            norm_val: str,
+            is_high_risk: bool = False
+        ):
+            nonlocal high_risk_unresolved
+            ev_records = (prod.field_evidence or {}).get(field_name, [])
+            primary_ev = ev_records[-1] if ev_records else None
+            
+            cand_val = primary_ev.candidate_value if (primary_ev and primary_ev.candidate_value) else raw_val
+            src_cit = primary_ev.source_title if primary_ev else "Supplier Input Feed"
+            src_exc = primary_ev.evidence_excerpt if primary_ev else f"Input value: '{raw_val}'"
+            src_url = primary_ev.source_url if primary_ev else None
+            src_typ = primary_ev.source_type if primary_ev else "supplier_input"
+            conf = primary_ev.confidence if primary_ev else 0.80
+            v_status = primary_ev.verification_status if primary_ev else "candidate"
+            dict_id = primary_ev.dictionary_identity if primary_ev else None
+            
+            field_flags = [f for f in prod.validation_flags if field_name.lower() in f.lower() or ("brand" in f.lower() and "brand" in field_name)]
+            
+            is_resolved = (v_status in ["verified", "unknown"])
+            if is_high_risk and not is_resolved:
+                high_risk_unresolved += 1
+
+            field_audits = [
+                AuditRecordSchema(
+                    id=a.id,
+                    field_name=a.field_name,
+                    reviewer=a.reviewer,
+                    timestamp=a.timestamp,
+                    previous_value=a.previous_value or "",
+                    new_value=a.new_value or "",
+                    action=a.action,
+                    reason=a.reason
+                )
+                for a in getattr(prod, "audit_trail", [])
+                if a.field_name == field_name
+            ]
+
+            return FieldReviewItemSchema(
+                field_name=field_name,
+                display_label=display_label,
+                raw_supplier_input=raw_val,
+                candidate_value=cand_val,
+                normalized_value=norm_val,
+                source_citation=src_cit,
+                source_excerpt=src_exc,
+                source_url=src_url,
+                source_type=src_typ,
+                confidence=conf,
+                validation_flags=field_flags,
+                verification_status=v_status,
+                dictionary_identity=dict_id,
+                is_high_risk=is_high_risk,
+                is_resolved=is_resolved,
+                audit_history=field_audits
+            )
+
+        # 1. High-Risk Core Fields
+        fields.append(build_field_item("mfg_part_number", "Manufacturer Part Number (MPN)", prod.raw.mfg_part_num or "", prod.mfg_part_number, is_high_risk=True))
+        fields.append(build_field_item("brand_name", "Canonical Brand Name", prod.raw.part_manuf or prod.raw.e1_brand or "", prod.brand_name, is_high_risk=True))
+        fields.append(build_field_item("manufacturer_name", "Manufacturer Legal Entity", prod.raw.part_manuf or "", prod.manufacturer_name, is_high_risk=True))
+        fields.append(build_field_item("classpath", "Taxonomy Classpath", prod.raw.part_desc or "", prod.classpath, is_high_risk=True))
+        fields.append(build_field_item("unspsc", "UNSPSC Code", prod.raw.part_desc or "", prod.unspsc, is_high_risk=True))
+        fields.append(build_field_item("invoice_desc", "INVOICE_DESC (≤40 Chars ALL CAPS)", prod.raw.part_desc or "", prod.invoice_desc, is_high_risk=True))
+        fields.append(build_field_item("short_desc", "SHORT_DESC / Product Title", prod.raw.part_desc or "", prod.short_desc, is_high_risk=True))
+
+        # 2. Additional Description Tiers
+        fields.append(build_field_item("mobile_desc", "MOBILE_DESC (60–80 Chars)", prod.raw.part_desc or "", prod.mobile_desc, is_high_risk=False))
+        fields.append(build_field_item("long_desc1", "LONG_DESC1 (Technical Spec)", prod.raw.part_desc or "", prod.long_desc1, is_high_risk=False))
+
+        # 3. Dynamic Technical Attributes
+        for attr in (prod.attributes or []):
+            if attr.label:
+                attr_raw = f"{attr.label}: {attr.value} {attr.uom or ''}".strip()
+                fields.append(build_field_item(
+                    f"attr_{attr.label}",
+                    f"Attribute: {attr.label}",
+                    attr_raw,
+                    f"{attr.value} {attr.uom or ''}".strip(),
+                    is_high_risk=False
+                ))
+
+        all_audits = [
+            AuditRecordSchema(
+                id=a.id,
+                field_name=a.field_name,
+                reviewer=a.reviewer,
+                timestamp=a.timestamp,
+                previous_value=a.previous_value or "",
+                new_value=a.new_value or "",
+                action=a.action,
+                reason=a.reason
+            )
+            for a in getattr(prod, "audit_trail", [])
+        ]
+
+        return ProductFieldReviewResponse(
+            product_id=str(prod.raw.row_id or key),
+            row_id=prod.raw.row_id or 1,
+            mfg_part_number=prod.mfg_part_number,
+            brand_name=prod.brand_name,
+            manufacturer_name=prod.manufacturer_name,
+            status=prod.status,
+            confidence_score=prod.confidence_score,
+            high_risk_unresolved_count=high_risk_unresolved,
+            can_promote_to_validated=(high_risk_unresolved == 0),
+            fields=fields,
+            audit_trail=all_audits
+        )
+
+    def apply_field_action(
+        self,
+        key: str,
+        field_name: str,
+        action: str,
+        new_value: Optional[str],
+        reason: str,
+        reviewer: str
+    ) -> Optional[Any]:
+        """Apply field-level approve, edit, reject, or mark_unknown action with audit record."""
+        prod = self._by_id.get(str(key).strip())
+        if not prod:
+            return None
+
+        from src.pipeline.models import AuditRecord, EvidenceRecord, SourceType, ExtractionMethod, VerificationStatus
+        from datetime import datetime, timezone
+
+        with self._lock:
+            old_val = ""
+            if field_name == "mfg_part_number":
+                old_val = prod.mfg_part_number
+                if action == "edit" and new_value is not None:
+                    prod.mfg_part_number = new_value.strip()
+            elif field_name == "brand_name":
+                old_val = prod.brand_name
+                if action == "edit" and new_value is not None:
+                    prod.brand_name = new_value.strip()
+            elif field_name == "manufacturer_name":
+                old_val = prod.manufacturer_name
+                if action == "edit" and new_value is not None:
+                    prod.manufacturer_name = new_value.strip()
+            elif field_name == "classpath":
+                old_val = prod.classpath
+                if action == "edit" and new_value is not None:
+                    prod.classpath = new_value.strip()
+            elif field_name == "unspsc":
+                old_val = prod.unspsc
+                if action == "edit" and new_value is not None:
+                    prod.unspsc = new_value.strip()
+            elif field_name == "invoice_desc":
+                old_val = prod.invoice_desc
+                if action == "edit" and new_value is not None:
+                    prod.invoice_desc = new_value.strip()[:40].upper()
+            elif field_name == "mobile_desc":
+                old_val = prod.mobile_desc
+                if action == "edit" and new_value is not None:
+                    prod.mobile_desc = new_value.strip()
+            elif field_name == "short_desc":
+                old_val = prod.short_desc
+                if action == "edit" and new_value is not None:
+                    prod.short_desc = new_value.strip()
+            elif field_name == "long_desc1":
+                old_val = prod.long_desc1
+                if action == "edit" and new_value is not None:
+                    prod.long_desc1 = new_value.strip()
+            elif field_name.startswith("attr_"):
+                attr_lbl = field_name.replace("attr_", "")
+                target_attr = next((a for a in prod.attributes if a.label.lower() == attr_lbl.lower()), None)
+                if target_attr:
+                    old_val = f"{target_attr.value} {target_attr.uom or ''}".strip()
+                    if action == "edit" and new_value is not None:
+                        target_attr.value = new_value.strip()
+                    elif action in ["reject", "mark_unknown"]:
+                        target_attr.value = ""
+
+            # Update or append EvidenceRecord
+            if not hasattr(prod, "field_evidence") or prod.field_evidence is None:
+                prod.field_evidence = {}
+
+            now_iso = datetime.now(timezone.utc).isoformat()
+            if field_name not in prod.field_evidence:
+                prod.field_evidence[field_name] = []
+
+            if action == "approve":
+                # Mark latest evidence record verified without erasing candidate or source
+                if prod.field_evidence[field_name]:
+                    prod.field_evidence[field_name][-1].verification_status = VerificationStatus.VERIFIED.value
+                    prod.field_evidence[field_name][-1].confidence = 1.0
+                else:
+                    prod.field_evidence[field_name].append(
+                        EvidenceRecord(
+                            field_name=field_name,
+                            candidate_value=old_val,
+                            normalized_value=old_val,
+                            source_type=SourceType.MANUAL_REVIEW.value,
+                            source_title=f"Manual Approval by {reviewer}",
+                            extraction_method=ExtractionMethod.MANUAL_REVIEW.value,
+                            retrieved_at=now_iso,
+                            confidence=1.0,
+                            verification_status=VerificationStatus.VERIFIED.value
+                        )
+                    )
+            elif action == "edit":
+                prod.field_evidence[field_name].append(
+                    EvidenceRecord(
+                        field_name=field_name,
+                        candidate_value=old_val,
+                        normalized_value=new_value or "",
+                        source_type=SourceType.MANUAL_REVIEW.value,
+                        source_title=f"Manual Edit by {reviewer}",
+                        evidence_excerpt=f"Reason: {reason}",
+                        extraction_method=ExtractionMethod.MANUAL_REVIEW.value,
+                        retrieved_at=now_iso,
+                        confidence=1.0,
+                        verification_status=VerificationStatus.VERIFIED.value
+                    )
+                )
+            elif action == "reject":
+                if prod.field_evidence[field_name]:
+                    prod.field_evidence[field_name][-1].verification_status = VerificationStatus.REJECTED.value
+                else:
+                    prod.field_evidence[field_name].append(
+                        EvidenceRecord(
+                            field_name=field_name,
+                            candidate_value=old_val,
+                            normalized_value="",
+                            source_type=SourceType.MANUAL_REVIEW.value,
+                            source_title=f"Rejected by {reviewer}",
+                            extraction_method=ExtractionMethod.MANUAL_REVIEW.value,
+                            retrieved_at=now_iso,
+                            confidence=0.0,
+                            verification_status=VerificationStatus.REJECTED.value
+                        )
+                    )
+            elif action == "mark_unknown":
+                if prod.field_evidence[field_name]:
+                    prod.field_evidence[field_name][-1].verification_status = "unknown"
+                    prod.field_evidence[field_name][-1].normalized_value = ""
+                else:
+                    prod.field_evidence[field_name].append(
+                        EvidenceRecord(
+                            field_name=field_name,
+                            candidate_value=old_val,
+                            normalized_value="",
+                            source_type=SourceType.MANUAL_REVIEW.value,
+                            source_title=f"Marked Unknown by {reviewer}",
+                            extraction_method=ExtractionMethod.MANUAL_REVIEW.value,
+                            retrieved_at=now_iso,
+                            confidence=0.0,
+                            verification_status="unknown"
+                        )
+                    )
+
+            # Record immutable AuditRecord
+            if not hasattr(prod, "audit_trail") or prod.audit_trail is None:
+                prod.audit_trail = []
+
+            audit_rec = AuditRecord(
+                field_name=field_name,
+                reviewer=reviewer,
+                previous_value=old_val,
+                new_value=(new_value or "") if action == "edit" else old_val,
+                action=action,
+                reason=reason
+            )
+            prod.audit_trail.append(audit_rec)
+
+            # Recompute delivery mapping and sync CSV
+            row_id_str = str(prod.raw.row_id)
+            self._delivery_by_id[row_id_str] = to_delivery_dict(prod)
+            self._sync_output_csv()
+
+            # SQLite database persistence sync
+            try:
+                from .db.repositories.products import product_repo
+                from .db.repositories.reviews import review_repo
+                from .db.repositories.audit import audit_repo
+                row_id = prod.raw.row_id or 1
+                review_repo.record_review_action(
+                    product_id=str(row_id),
+                    field_name=field_name,
+                    action=action,
+                    new_value=new_value,
+                    reason=reason,
+                    reviewer=reviewer,
+                )
+                audit_repo.record_action(
+                    user_email=reviewer,
+                    role="reviewer",
+                    action=f"FIELD_{action.upper()}",
+                    entity_type="product_field",
+                    entity_id=f"{row_id}:{field_name}",
+                    before_state={"value": old_val},
+                    after_state={"value": new_value if action == "edit" else old_val, "action": action},
+                    reason=reason,
+                )
+                product_repo.upsert_enriched_field(
+                    product_id=str(row_id),
+                    field_name=field_name,
+                    field_value=new_value if action == "edit" else old_val,
+                    confidence_score=1.0 if action in ("approve", "edit") else 0.0,
+                    verification_status="verified" if action in ("approve", "edit") else action,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to persist field action to SQLite database: {e}")
+
+        return self.get_product_field_review(key)
+
+    def promote_to_validated(self, key: str, reviewer: str, notes: Optional[str] = "") -> Tuple[bool, str, List[str]]:
+        """Promote product to Validated status only if all high-risk fields are resolved."""
+        review_data = self.get_product_field_review(key)
+        if not review_data:
+            return False, f"Product {key} not found", []
+
+        unresolved_high_risk = [f.field_name for f in review_data.fields if f.is_high_risk and not f.is_resolved]
+        if unresolved_high_risk:
+            return False, f"Cannot promote to Validated: High-risk fields {unresolved_high_risk} are unresolved.", unresolved_high_risk
+
+        prod = self._by_id.get(str(key).strip())
+        if not prod:
+            return False, f"Product {key} not found", []
+
+        from src.pipeline.models import AuditRecord
+        with self._lock:
+            prod.status = "Validated"
+            prod.confidence_score = max(prod.confidence_score, 0.98)
+            row_id_str = str(prod.raw.row_id)
+            if row_id_str in self._review_ids:
+                self._review_ids.remove(row_id_str)
+
+            audit_rec = AuditRecord(
+                field_name="product_status",
+                reviewer=reviewer,
+                previous_value="Flagged",
+                new_value="Validated",
+                action="approve",
+                reason=notes or "All high-risk fields verified and validated by specialist"
+            )
+            prod.audit_trail.append(audit_rec)
+
+            self._delivery_by_id[row_id_str] = to_delivery_dict(prod)
+            self._sync_output_csv()
+
+            # SQLite database persistence sync
+            try:
+                from .db.repositories.products import product_repo
+                from .db.repositories.audit import audit_repo
+                row_id = prod.raw.row_id or 1
+                product_repo.upsert_product(
+                    product_id=str(row_id),
+                    mfg_part_num=prod.raw.mfg_part_num or prod.mfg_part_number,
+                    canonical_mpn=prod.mfg_part_number,
+                    status="Validated",
+                    brand=prod.brand_name,
+                    manufacturer=prod.manufacturer_name,
+                    classpath=prod.classpath,
+                    unspsc=prod.unspsc,
+                    invoice_desc=prod.invoice_desc,
+                    mobile_desc=prod.mobile_desc,
+                    short_desc=prod.short_desc,
+                    long_desc=prod.long_desc1,
+                    confidence=prod.confidence_score,
+                )
+                audit_repo.record_action(
+                    user_email=reviewer,
+                    role="reviewer",
+                    action="PROMOTE_TO_VALIDATED",
+                    entity_type="product",
+                    entity_id=str(row_id),
+                    before_state={"status": "Flagged"},
+                    after_state={"status": "Validated"},
+                    reason=notes or "All high-risk fields verified and validated by reviewer",
+                )
+            except Exception as e:
+                logger.warning(f"Failed to persist validation promotion to SQLite database: {e}")
+
+        return True, f"Product {key} successfully promoted to Validated.", []
+
     # -----------------------------------------------------------------------
     # Statistics & Facets
     # -----------------------------------------------------------------------
@@ -398,9 +1077,36 @@ class CatalogState:
         mean_conf = round(sum(confidences) / len(confidences), 3) if confidences else 0.0
         sorted_conf = sorted(confidences)
         median_conf = round(sorted_conf[len(sorted_conf) // 2], 3) if sorted_conf else 0.0
-
         # Top 10 brands
         top_brands = dict(sorted(brand_counts.items(), key=lambda x: -x[1])[:10])
+
+        # Evidence coverage calculations
+        sources_registered = 0
+        try:
+            from src.evidence.registry import EvidenceRegistryManager
+            reg_mgr = EvidenceRegistryManager()
+            sources_registered = len(reg_mgr.load_registry())
+        except Exception:
+            sources_registered = 0
+
+        verified_fields_total = 0
+        candidate_fields_total = 0
+        unsupported_withheld_total = 0
+
+        for p in self._products_list:
+            if hasattr(p, "provenance_summary") and p.provenance_summary:
+                verified_fields_total += p.provenance_summary.verified_fields_count
+                candidate_fields_total += p.provenance_summary.candidate_fields_count
+                unsupported_withheld_total += (p.provenance_summary.missing_evidence_count + p.provenance_summary.rejected_fields_count)
+            elif hasattr(p, "field_evidence") and p.field_evidence:
+                for f_name, ev_list in p.field_evidence.items():
+                    for ev in ev_list:
+                        if ev.verification_status == "verified":
+                            verified_fields_total += 1
+                        elif ev.verification_status == "candidate":
+                            candidate_fields_total += 1
+                        elif ev.verification_status in ["rejected", "missing_evidence"]:
+                            unsupported_withheld_total += 1
 
         return {
             "total_items": total,
@@ -416,7 +1122,11 @@ class CatalogState:
             "schema_columns_count": 252,
             "status_counts": status_counts,
             "dept_counts": dept_counts,
-            "top_brands": top_brands
+            "top_brands": top_brands,
+            "sources_registered_count": sources_registered,
+            "verified_fields_count": verified_fields_total,
+            "candidate_fields_count": candidate_fields_total,
+            "unsupported_fields_withheld": unsupported_withheld_total
         }
 
     def get_filter_options(self) -> Dict[str, Any]:

@@ -17,9 +17,10 @@ from src.backend.config import settings
 def test_password_hashing_and_verification():
     raw_pwd = "MySecretPassword2026!"
     hashed = hash_password(raw_pwd)
-    assert hashed.startswith("pbkdf2:sha256:100000$")
+    assert hashed != raw_pwd
+    assert hashed.startswith("pbkdf2:sha256:600000$")
     assert verify_password(raw_pwd, hashed) is True
-    assert verify_password("WrongPassword123!", hashed) is False
+    assert verify_password("WrongPassword!", hashed) is False
     assert verify_password("", hashed) is False
 
 

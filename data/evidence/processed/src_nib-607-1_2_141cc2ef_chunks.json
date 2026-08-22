@@ -1,0 +1,33 @@
+[
+  {
+    "chunk_id": "chk_nib-607-1_2_1_6f66a859",
+    "source_id": "src_nib-607-1_2_141cc2ef",
+    "mpn": "NIB-607-1/2",
+    "brand": "NIBCO\u00ae",
+    "manufacturer": "NIBCO INC.",
+    "section_title": "Technical Specifications",
+    "page_number": 1,
+    "text_content": "Fitting Type: 90 deg Elbow\nConnection Type: Sweat\nMaterial: Copper\nNominal Size: 1/2 in\nPressure Rating: 300 psi\nStandards / Approvals: ASME B16.22, NSF/ANSI 61",
+    "key_value_specs": {
+      "Fitting Type": "90 deg Elbow",
+      "Connection Type": "Sweat",
+      "Material": "Copper",
+      "Nominal Size": "1/2 in",
+      "Pressure Rating": "300 psi",
+      "Standards / Approvals": "ASME B16.22, NSF/ANSI 61"
+    },
+    "chunk_hash": "6f66a8590da23423"
+  },
+  {
+    "chunk_id": "chk_nib-607-1_2_2_40f3628f",
+    "source_id": "src_nib-607-1_2_141cc2ef",
+    "mpn": "NIB-607-1/2",
+    "brand": "NIBCO\u00ae",
+    "manufacturer": "NIBCO INC.",
+    "section_title": "Application Details",
+    "page_number": 1,
+    "text_content": "For use in aboveground potable water supply systems. Dezincification resistant wrot copper construction.",
+    "key_value_specs": {},
+    "chunk_hash": "40f3628ff6549577"
+  }
+]

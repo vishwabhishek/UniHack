@@ -1,0 +1,52 @@
+[
+  {
+    "chunk_id": "chk_gdt665ssnss_1_cc83d943",
+    "source_id": "src_gdt665ssnss_23809955",
+    "mpn": "GDT665SSNSS",
+    "brand": "GE APPLIANCES\u2122",
+    "manufacturer": "GE Appliances, a Haier company",
+    "section_title": "Product Overview",
+    "page_number": 1,
+    "text_content": "Installation Type: Built-In\nInterior Tub Material: Stainless Steel\nSound Level: 48 dBA\nNumber of Wash Cycles: 5\nPlace Settings: 16",
+    "key_value_specs": {
+      "Installation Type": "Built-In",
+      "Interior Tub Material": "Stainless Steel",
+      "Sound Level": "48 dBA",
+      "Number of Wash Cycles": "5",
+      "Place Settings": "16"
+    },
+    "chunk_hash": "cc83d94347c36903"
+  },
+  {
+    "chunk_id": "chk_gdt665ssnss_2_de8cb633",
+    "source_id": "src_gdt665ssnss_23809955",
+    "mpn": "GDT665SSNSS",
+    "brand": "GE APPLIANCES\u2122",
+    "manufacturer": "GE Appliances, a Haier company",
+    "section_title": "Electrical Ratings",
+    "page_number": 1,
+    "text_content": "Voltage: 120 V\nAmperage: 15 A\nEnergy Star: Yes",
+    "key_value_specs": {
+      "Voltage": "120 V",
+      "Amperage": "15 A",
+      "Energy Star": "Yes"
+    },
+    "chunk_hash": "de8cb6338d66670b"
+  },
+  {
+    "chunk_id": "chk_gdt665ssnss_3_d8a0d4a1",
+    "source_id": "src_gdt665ssnss_23809955",
+    "mpn": "GDT665SSNSS",
+    "brand": "GE APPLIANCES\u2122",
+    "manufacturer": "GE Appliances, a Haier company",
+    "section_title": "Dimensions",
+    "page_number": 1,
+    "text_content": "Overall Width: 23-3/4 in\nOverall Height: 34 in\nOverall Depth: 24 in",
+    "key_value_specs": {
+      "Overall Width": "23-3/4 in",
+      "Overall Height": "34 in",
+      "Overall Depth": "24 in"
+    },
+    "chunk_hash": "d8a0d4a1401f86ae"
+  }
+]

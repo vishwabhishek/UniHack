@@ -78,10 +78,10 @@ class EntityResolver:
         brand_name = clean_name.title() if clean_name else "Generic"
         return {
             "manufacturer_name": raw_manuf or "Industrial Supplies",
-            "brand_name": f"{brand_name}®",
-            "trade_name": brand_name,
+            "brand_name": f"{brand_name}®" if brand_name != "Generic" else "Generic",
+            "trade_name": brand_name if brand_name != "Generic" else "",
             "series": "",
-            "mfr_url": f"https://www.{re.sub(r'[^a-zA-Z0-9]', '', brand_name).lower()}.com"
+            "mfr_url": ""  # Never guess manufacturer URL without verified evidence
         }
 
     def _resolve_missing_manufacturer(self, mpn: str, desc: str) -> Optional[Dict[str, str]]:
@@ -233,7 +233,7 @@ class EntityResolver:
                     "brand_name": pattern_data["brand"],
                     "trade_name": pattern_data["trade"],
                     "series": series,
-                    "mfr_url": f"https://www.{re.sub(r'[^a-zA-Z0-9]', '', pattern_data['brand']).lower()}.com"
+                    "mfr_url": pattern_data.get("url", "")
                 }
         
         # Keyword checks in description
@@ -454,5 +454,5 @@ class EntityResolver:
             "brand_name": ent.get("brand", ""),
             "trade_name": ent.get("trade", ""),
             "series": series,
-            "mfr_url": ent.get("url", f"https://www.{re.sub(r'[^a-zA-Z0-9]', '', ent.get('brand', '')).lower()}.com")
+            "mfr_url": ent.get("url", "")
         }

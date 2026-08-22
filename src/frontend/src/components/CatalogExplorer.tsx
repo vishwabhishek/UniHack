@@ -1,8 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ProductListItem, FilterOptionItem } from '../types';
-import { fetchProducts, fetchFilters, fetchRAGSearch, RAGSearchResult } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { ProductListItem, FilterOptionItem, CatalogStats } from '../types';
+import { fetchProducts, fetchFilters, fetchRAGSearch, fetchStats, RAGSearchResult } from '../services/api';
 import { useToast } from './Toast';
-import { ChevronLeft, ChevronRight, ExternalLink, Search, X, Sparkles, Sliders, Zap } from 'lucide-react';
+import { MetricsBanner } from './MetricsBanner';
+import { StatusBadge } from './common/StatusBadge';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Search,
+  X,
+  Sparkles,
+  Sliders,
+  ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
+  HelpCircle,
+  CheckCircle2,
+  Info
+} from 'lucide-react';
 
 interface CatalogExplorerProps {
   onInspectProduct: (productId: string) => void;
@@ -22,6 +38,7 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   const { showToast } = useToast();
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [departments, setDepartments] = useState<FilterOptionItem[]>([]);
+  const [stats, setStats] = useState<CatalogStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
@@ -30,12 +47,13 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
 
-  // Search Engine Mode: Standard Exact/Token vs LlamaIndex Neural RAG
-  const [searchMode, setSearchMode] = useState<'standard' | 'rag'>('standard');
+  // Search Engine Mode: Keyword (Exact/Lexical) vs Semantic (Hybrid Neural)
+  const [searchMode, setSearchMode] = useState<'keyword' | 'semantic'>('keyword');
   const [ragResults, setRagResults] = useState<RAGSearchResult[]>([]);
   const [ragSynthesis, setRagSynthesis] = useState<string>('');
   const [ragLatency, setRagLatency] = useState<number>(0);
   const [denseWeight, setDenseWeight] = useState<number>(0.65);
+  const [showSemanticInfo, setShowSemanticInfo] = useState<boolean>(false);
 
   useEffect(() => {
     setSelectedStatus(initialStatus);
@@ -48,23 +66,25 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   }, [globalSearch]);
 
   useEffect(() => {
-    loadFilters();
+    loadFiltersAndStats();
   }, []);
 
   useEffect(() => {
-    if (searchMode === 'rag' && searchTerm.trim()) {
-      executeRAGSearch();
+    if (searchMode === 'semantic' && searchTerm.trim()) {
+      executeSemanticSearch();
     } else {
       loadData();
     }
   }, [page, limit, searchTerm, selectedCategory, selectedStatus, searchMode, denseWeight]);
 
-  const loadFilters = async () => {
+  const loadFiltersAndStats = async () => {
     try {
       const filterData = await fetchFilters();
       setDepartments(filterData.departments || []);
+      const statsData = await fetchStats();
+      setStats(statsData);
     } catch (e) {
-      console.error('Failed to load filter options:', e);
+      console.error('Failed to load filter options or stats:', e);
     }
   };
 
@@ -88,7 +108,7 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
     }
   };
 
-  const executeRAGSearch = async () => {
+  const executeSemanticSearch = async () => {
     if (!searchTerm.trim()) {
       loadData();
       return;
@@ -107,9 +127,9 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
       setRagLatency(res.latency_ms || 0);
       setTotalCount(res.total_results || 0);
     } catch (e) {
-      console.error('Failed to execute LlamaIndex RAG search:', e);
-      showToast('RAG Search', 'Falling back to standard search', 'error');
-      setSearchMode('standard');
+      console.error('Failed to execute semantic search:', e);
+      showToast('Search', 'Falling back to keyword search', 'warning');
+      setSearchMode('keyword');
       loadData();
     } finally {
       setLoading(false);
@@ -149,7 +169,7 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
   const renderMiniGauge = (score: number) => {
     const active = Math.round(score * 10);
     return (
-      <div className="flex items-center">
+      <div className="flex items-center gap-1.5">
         <div className="mini-gauge">
           {Array.from({ length: 10 }).map((_, i) => (
             <span
@@ -157,341 +177,326 @@ export const CatalogExplorer: React.FC<CatalogExplorerProps> = ({
               className={
                 i < active
                   ? score >= 0.85
-                    ? 'on'
+                    ? 'on green'
                     : 'on amber'
                   : ''
               }
             />
           ))}
         </div>
-        <span className="conf-val">{score.toFixed(2)}</span>
+        <span className="font-mono text-xs text-[var(--text-secondary)]">{score.toFixed(2)}</span>
       </div>
     );
   };
 
-  const renderStatusChip = (st: string) => {
-    const clean = st.toLowerCase();
-    if (clean === 'validated') {
-      return <span className="chip validated">validated</span>;
-    } else if (clean === 'flagged' || clean === 'needs human review') {
-      return <span className="chip flagged">flagged</span>;
-    } else if (clean === 'draft') {
-      return <span className="chip draft">draft</span>;
-    } else {
-      return <span className="chip enriched">enriched</span>;
+  const renderEvidenceStatus = (item: ProductListItem) => {
+    if (item.status === 'Validated') {
+      return <StatusBadge status="verified" />;
     }
+    if (item.validation_flags && item.validation_flags.length > 0) {
+      const hasConflict = item.validation_flags.some((f) => f.toLowerCase().includes('conflict'));
+      if (hasConflict) {
+        return <StatusBadge status="conflict" />;
+      }
+      return <StatusBadge status="flagged" />;
+    }
+    if (item.confidence_score < 0.85) {
+      return <StatusBadge status="candidate" />;
+    }
+    return <StatusBadge status="candidate" />;
+  };
+
+  const renderStatusChip = (st: string) => {
+    return <StatusBadge status={st} />;
   };
 
   const totalPages = Math.ceil(totalCount / limit) || 1;
 
-  const RAG_PRESETS = [
-    'quiet dishwasher 120V stainless steel',
-    'heavy duty diablo sanding disc for wood',
-    'milwaukee saw blade 18 TPI',
-    '3M abrasive wheel'
-  ];
-
   return (
-    <div className="panel bg-[var(--surface-2)] border border-[var(--border)] rounded-[10px] overflow-hidden font-sans">
+    <div className="space-y-4 font-sans">
       
-      {/* Panel Head */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center p-[16px_18px] border-b border-[var(--border)] gap-3">
+      {/* Scoped Operational Summary */}
+      <MetricsBanner
+        stats={stats}
+        onFilterStatus={(st) => {
+          setSelectedStatus(st);
+          setPage(1);
+        }}
+      />
+
+      {/* Main Table Panel */}
+      <div className="panel bg-[var(--surface-2)] border border-[var(--border)] rounded-[10px] overflow-hidden">
         
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <h3 className="text-[13px] font-semibold text-[var(--text-primary)] whitespace-nowrap">
-            Catalog explorer
-          </h3>
-
-          {/* Mode Switcher */}
-          <div className="flex items-center bg-[var(--surface-1)] p-0.5 rounded-lg border border-[var(--border-strong)] font-mono text-[11px]">
-            <button
-              onClick={() => {
-                setSearchMode('standard');
-                setPage(1);
-              }}
-              className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
-                searchMode === 'standard'
-                  ? 'bg-[var(--surface-2)] text-[var(--text-primary)] font-semibold shadow-sm'
-                  : 'text-[var(--text-muted)] hover:text-white'
-              }`}
-            >
-              Exact Filter
-            </button>
-            <button
-              onClick={() => {
-                setSearchMode('rag');
-                setPage(1);
-              }}
-              className={`px-2.5 py-1 rounded flex items-center gap-1.5 transition-all cursor-pointer ${
-                searchMode === 'rag'
-                  ? 'bg-[var(--cyan-bg)] text-[var(--cyan)] font-semibold shadow-sm border border-[var(--cyan)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--cyan)]'
-              }`}
-            >
-              <Sparkles className="w-3 h-3 text-[var(--cyan)]" />
-              <span>LlamaIndex RAG</span>
-            </button>
-          </div>
-
-          {/* Search Input Bar */}
-          <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => handleSearchInputChange(e.target.value)}
-              placeholder={searchMode === 'rag' ? "Ask natural language question..." : "search SKU, MPN, brand, UNSPSC…"}
-              className="w-full bg-[var(--surface-1)] border border-[var(--border-strong)] rounded-md pl-9 pr-7 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] font-mono focus:outline-none focus:border-[var(--cyan)]"
-            />
-            {searchTerm && (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-white p-0.5 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Filter Chips & Dropdowns */}
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-          {/* Status Quick Filters */}
-          {['All', 'Validated', 'Enriched', 'Flagged'].map((st) => (
-            <button
-              key={st}
-              onClick={() => {
-                setSelectedStatus(st);
-                setPage(1);
-              }}
-              className={`chip-filter cursor-pointer transition-colors ${
-                selectedStatus === st
-                  ? 'border-[var(--cyan)] text-[var(--cyan)] bg-[var(--cyan-bg)]'
-                  : 'hover:text-[var(--text-primary)]'
-              }`}
-            >
-              status: {st.toLowerCase()}
-            </button>
-          ))}
-
-          {/* Department Selector */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => {
-              setSelectedCategory(e.target.value);
-              setPage(1);
-            }}
-            className="chip-filter bg-[var(--surface-1)] text-[var(--text-secondary)] focus:outline-none cursor-pointer"
-          >
-            <option value="">all categories ({totalCount})</option>
-            {departments.map((d) => (
-              <option key={d.value} value={d.value}>
-                {d.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* RAG Synthesis & Prompt Suggestions (When in RAG Mode) */}
-      {searchMode === 'rag' && (
-        <div className="p-[12px_18px] bg-[var(--bg)] border-b border-[var(--border)] font-mono text-xs space-y-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-[11px]">
-              <span className="text-[var(--cyan)] flex items-center gap-1 font-semibold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>LLAMAININDEX HYBRID RETRIEVAL:</span>
+        {/* Panel Controls */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center p-4 border-b border-[var(--border)] gap-3 bg-[var(--surface-1)]">
+          
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            {/* Search Mode Switcher */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-mono text-[var(--text-muted)] uppercase hidden sm:inline">
+                Mode:
               </span>
-              <span className="text-[var(--text-muted)]">
-                FastEmbed BAAI/bge-small-en-v1.5 + BM25 Lexical Fusion
-              </span>
-            </div>
-
-            {ragLatency > 0 && (
-              <div className="flex items-center gap-2 text-[11px] text-[var(--green)]">
-                <Zap className="w-3 h-3" />
-                <span>{ragLatency.toFixed(1)} ms latency</span>
+              <div className="flex items-center bg-[var(--surface-2)] p-0.5 rounded-md border border-[var(--border-strong)] font-mono text-xs">
+                <button
+                  onClick={() => {
+                    setSearchMode('keyword');
+                    setPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
+                    searchMode === 'keyword'
+                      ? 'bg-[var(--surface-1)] text-[var(--text-primary)] font-semibold shadow-xs'
+                      : 'text-[var(--text-muted)] hover:text-white'
+                  }`}
+                >
+                  Keyword
+                </button>
+                <button
+                  onClick={() => {
+                    setSearchMode('semantic');
+                    setPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded flex items-center gap-1.5 transition-all cursor-pointer ${
+                    searchMode === 'semantic'
+                      ? 'bg-[var(--cyan-bg)] text-[var(--cyan)] font-semibold shadow-xs border border-[var(--cyan)]'
+                      : 'text-[var(--text-muted)] hover:text-[var(--cyan)]'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3 text-[var(--cyan)]" />
+                  <span>Semantic</span>
+                </button>
               </div>
-            )}
+
+              <button
+                onClick={() => setShowSemanticInfo(!showSemanticInfo)}
+                title="About search modes"
+                className="p-1 text-[var(--text-muted)] hover:text-white cursor-pointer"
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative w-full sm:w-72">
+              <Search className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
+                placeholder={searchMode === 'semantic' ? 'Describe item or specs...' : 'Search MPN, brand, classpath...'}
+                className="w-full bg-[var(--surface-2)] border border-[var(--border-strong)] rounded-md pl-9 pr-7 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] font-mono focus:outline-none focus:border-[var(--cyan)]"
+              />
+              {searchTerm && (
+                <button
+                  onClick={handleClearSearch}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-white p-0.5 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
-          {ragSynthesis && (
-            <div className="p-2.5 bg-[var(--surface-1)] rounded border border-[var(--cyan)]/30 text-[11px] text-[var(--text-primary)]">
-              {ragSynthesis}
-            </div>
-          )}
-
-          {/* Quick RAG Sample Prompts */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="text-[10px] text-[var(--text-muted)]">TRY PROMPTS:</span>
-            {RAG_PRESETS.map((p) => (
+          {/* Quick Filters */}
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto font-mono text-xs">
+            {['All', 'Validated', 'Enriched', 'Flagged'].map((st) => (
               <button
-                key={p}
-                onClick={() => handleSearchInputChange(p)}
-                className="px-2 py-0.5 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[10px] text-[var(--text-secondary)] hover:text-[var(--cyan)] hover:border-[var(--cyan)] cursor-pointer"
+                key={st}
+                onClick={() => {
+                  setSelectedStatus(st);
+                  setPage(1);
+                }}
+                className={`chip-filter cursor-pointer transition-colors ${
+                  selectedStatus === st
+                    ? 'border-[var(--cyan)] text-[var(--cyan)] bg-[var(--cyan-bg)] font-bold'
+                    : 'hover:text-[var(--text-primary)]'
+                }`}
               >
-                &ldquo;{p}&rdquo;
+                {st}
               </button>
             ))}
+
+            {/* Department Dropdown */}
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setPage(1);
+              }}
+              className="chip-filter bg-[var(--surface-2)] text-[var(--text-primary)] border border-[var(--border-strong)] rounded-md px-2.5 py-1 focus:outline-none focus:border-[var(--cyan)] cursor-pointer"
+            >
+              <option value="" className="bg-[#12161D] text-[#E7EAF0]">All Categories ({totalCount})</option>
+              {departments.map((d) => (
+                <option key={d.value} value={d.value} className="bg-[#12161D] text-[#E7EAF0]">
+                  {d.label}
+                </option>
+              ))}
+            </select>
+
           </div>
         </div>
-      )}
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <colgroup>
-            <col style={{ width: '18%' }} />
-            <col style={{ width: '15%' }} />
-            <col style={{ width: searchMode === 'rag' ? '22%' : '28%' }} />
-            {searchMode === 'rag' && <col style={{ width: '15%' }} />}
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '8%' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>SKU / MPN</th>
-              <th>Brand</th>
-              <th>{searchMode === 'rag' ? 'Classpath / Reason' : 'Classpath'}</th>
-              {searchMode === 'rag' && <th>Hybrid Match Score</th>}
-              <th>Confidence</th>
-              <th>Status</th>
-              <th className="text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td colSpan={searchMode === 'rag' ? 7 : 6} className="py-4 px-[18px]">
-                    <div className="h-4 bg-[var(--surface-1)] rounded w-full" />
-                  </td>
-                </tr>
-              ))
-            ) : (searchMode === 'rag' ? ragResults.length === 0 : products.length === 0) ? (
-              <tr>
-                <td colSpan={searchMode === 'rag' ? 7 : 6} className="py-12 text-center text-[var(--text-muted)] font-mono text-xs space-y-3">
-                  <p>No catalog records matching active query &quot;{searchTerm}&quot; or filter criteria.</p>
-                  {(searchTerm || selectedStatus !== 'All' || selectedCategory) && (
-                    <button
-                      onClick={handleClearAllFilters}
-                      className="px-3 py-1.5 rounded-md bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--cyan)] hover:underline cursor-pointer"
-                    >
-                      Clear search &amp; reset all filters
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ) : searchMode === 'rag' ? (
-              ragResults.map((item) => (
-                <tr
-                  key={item.product_id}
-                  onClick={() => onInspectProduct(item.product_id)}
-                  className="cursor-pointer hover:bg-[rgba(255,255,255,0.015)] transition-colors"
-                >
-                  <td className="mono cell-primary">
-                    {item.mfg_part_number || item.sku || `SKU-${item.row_id}`}
-                  </td>
-                  <td className="cell-secondary">{item.brand_name || '— unresolved —'}</td>
-                  <td className="cell-secondary">
-                    <div className="truncate max-w-[240px]" title={item.classpath}>
-                      {item.classpath}
-                    </div>
-                    <div className="text-[10px] text-[var(--cyan)] truncate max-w-[240px]">
-                      {item.match_reason}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="font-mono text-xs flex items-center gap-1.5">
-                      <span className="font-semibold text-[var(--green)]">{(item.hybrid_score * 100).toFixed(1)}%</span>
-                      <span className="text-[9px] text-[var(--text-muted)]">(D: {item.dense_score.toFixed(2)} | B: {item.bm25_score.toFixed(2)})</span>
-                    </div>
-                  </td>
-                  <td>{renderMiniGauge(item.confidence_score)}</td>
-                  <td>{renderStatusChip(item.status)}</td>
-                  <td className="text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onInspectProduct(item.product_id);
-                      }}
-                      className="text-[11px] font-mono text-[var(--cyan)] hover:underline inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>inspect</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              products.map((item) => (
-                <tr
-                  key={item.id}
-                  onClick={() => onInspectProduct(item.id)}
-                  className="cursor-pointer hover:bg-[rgba(255,255,255,0.015)] transition-colors"
-                >
-                  <td className="mono cell-primary">
-                    {item.mfg_part_number || item.sku || `SKU-${item.row_id}`}
-                  </td>
-                  <td className="cell-secondary">{item.brand_name || '— unresolved —'}</td>
-                  <td className="cell-secondary truncate max-w-[280px]" title={item.classpath}>
-                    {item.classpath || 'Industrial Component'}
-                  </td>
-                  <td>{renderMiniGauge(item.confidence_score)}</td>
-                  <td>{renderStatusChip(item.status)}</td>
-                  <td className="text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onInspectProduct(item.id);
-                      }}
-                      className="text-[11px] font-mono text-[var(--cyan)] hover:underline inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>inspect</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination Bar */}
-      <div className="flex items-center justify-between p-[12px_18px] border-t border-[var(--border)] font-mono text-xs text-[var(--text-muted)]">
-        <div>
-          Showing <span className="text-[var(--text-primary)]">{searchMode === 'rag' ? ragResults.length : products.length}</span> of{' '}
-          <span className="text-[var(--text-primary)]">{totalCount}</span> SKUs
-          {searchTerm && (
-            <span className="text-[var(--cyan)] ml-2">
-              ({searchMode === 'rag' ? 'semantic neural RAG query' : 'matching'} &quot;{searchTerm}&quot;)
-            </span>
-          )}
-        </div>
-
-        {searchMode !== 'rag' && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page <= 1}
-              className="p-1 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white disabled:opacity-30 cursor-pointer"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <span>
-              {page} / {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page >= totalPages}
-              className="p-1 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-white disabled:opacity-30 cursor-pointer"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+        {/* Semantic Search Context Disclosure */}
+        {showSemanticInfo && (
+          <div className="p-3 bg-[var(--surface-2)] border-b border-[var(--border)] text-xs text-[var(--text-muted)] flex items-start gap-2">
+            <Info className="w-4 h-4 text-[var(--cyan)] flex-shrink-0 mt-0.5" />
+            <p>
+              <b className="text-[var(--text-primary)]">Keyword mode:</b> Exact token and prefix filter over MPN, Brand, and Classpath.
+              <br />
+              <b className="text-[var(--cyan)]">Semantic mode:</b> Hybrid neural retrieval combining dense text embeddings and lexical BM25 matching.
+            </p>
           </div>
         )}
+
+        {/* Catalog Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse font-sans text-xs">
+            <thead>
+              <tr className="bg-[var(--surface-1)] border-b border-[var(--border)] text-[var(--text-muted)] font-mono text-[11px]">
+                <th className="py-3 px-4 text-left font-semibold uppercase">MPN / SKU</th>
+                <th className="py-3 px-4 text-left font-semibold uppercase">Product Title / Brand</th>
+                <th className="py-3 px-4 text-left font-semibold uppercase">Classpath</th>
+                <th className="py-3 px-4 text-left font-semibold uppercase">Evidence Status</th>
+                <th className="py-3 px-4 text-left font-semibold uppercase">Confidence</th>
+                <th className="py-3 px-4 text-left font-semibold uppercase">Review State</th>
+                <th className="py-3 px-4 text-right font-semibold uppercase">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {loading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={7} className="py-4 px-4">
+                      <div className="h-4 bg-[var(--surface-1)] rounded w-full" />
+                    </td>
+                  </tr>
+                ))
+              ) : (searchMode === 'semantic' ? ragResults.length === 0 : products.length === 0) ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-[var(--text-muted)] font-mono text-xs space-y-3">
+                    <p>No catalog records matching active query &ldquo;{searchTerm}&rdquo; or filter criteria.</p>
+                    {(searchTerm || selectedStatus !== 'All' || selectedCategory) && (
+                      <button
+                        onClick={handleClearAllFilters}
+                        className="px-3 py-1.5 rounded-md bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--cyan)] hover:underline cursor-pointer"
+                      >
+                        Reset all filters
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ) : searchMode === 'semantic' ? (
+                ragResults.map((item) => (
+                  <tr
+                    key={item.product_id}
+                    onClick={() => onInspectProduct(item.product_id)}
+                    className="cursor-pointer hover:bg-[var(--surface-1)] transition-colors"
+                  >
+                    <td className="py-3 px-4 font-mono font-bold text-[var(--cyan)]">
+                      {item.mfg_part_number || item.sku || `SKU-${item.row_id}`}
+                    </td>
+                    <td className="py-3 px-4 max-w-[260px]">
+                      <div className="font-semibold text-[var(--text-primary)] truncate">
+                        {item.brand_name}
+                      </div>
+                      <div className="text-[11px] text-[var(--text-muted)] truncate">
+                        {item.match_reason}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-[var(--text-secondary)] font-mono text-[11px] truncate max-w-[200px]" title={item.classpath}>
+                      {item.classpath}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                        Hybrid Match ({(item.hybrid_score * 100).toFixed(0)}%)
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">{renderMiniGauge(item.confidence_score)}</td>
+                    <td className="py-3 px-4">{renderStatusChip(item.status)}</td>
+                    <td className="py-3 px-4 text-right font-mono">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onInspectProduct(item.product_id);
+                        }}
+                        className="text-xs text-[var(--cyan)] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Inspect</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                products.map((item) => (
+                  <tr
+                    key={item.id}
+                    onClick={() => onInspectProduct(item.id)}
+                    className="cursor-pointer hover:bg-[var(--surface-1)] transition-colors"
+                  >
+                    <td className="py-3 px-4 font-mono font-bold text-[var(--text-primary)]">
+                      {item.mfg_part_number || item.sku || `SKU-${item.row_id}`}
+                    </td>
+                    <td className="py-3 px-4 max-w-[280px]">
+                      <div className="font-semibold text-[var(--text-primary)] truncate" title={item.short_desc || item.product_name}>
+                        {item.short_desc || item.product_name || item.brand_name}
+                      </div>
+                      <div className="text-[11px] text-[var(--cyan)] font-mono">
+                        {item.brand_name} · <span className="text-[var(--text-muted)]">{item.manufacturer_name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-[var(--text-secondary)] font-mono text-[11px] truncate max-w-[220px]" title={item.classpath}>
+                      {item.classpath || 'Industrial Component'}
+                    </td>
+                    <td className="py-3 px-4">{renderEvidenceStatus(item)}</td>
+                    <td className="py-3 px-4">{renderMiniGauge(item.confidence_score)}</td>
+                    <td className="py-3 px-4">{renderStatusChip(item.status)}</td>
+                    <td className="py-3 px-4 text-right font-mono">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onInspectProduct(item.id);
+                        }}
+                        className="text-xs text-[var(--cyan)] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Inspect</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="p-3 bg-[var(--surface-1)] border-t border-[var(--border)] flex items-center justify-between font-mono text-xs text-[var(--text-muted)]">
+          <div>
+            Showing <span className="text-[var(--text-primary)] font-bold">{products.length}</span> of{' '}
+            <span className="text-[var(--text-primary)] font-bold">{totalCount}</span> items
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || loading}
+              className="p-1 rounded bg-[var(--surface-2)] border border-[var(--border)] disabled:opacity-40 hover:text-white cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span>
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || loading}
+              className="p-1 rounded bg-[var(--surface-2)] border border-[var(--border)] disabled:opacity-40 hover:text-white cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
       </div>
 
     </div>

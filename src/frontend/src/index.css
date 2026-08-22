@@ -3,15 +3,16 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: dark;
   --bg: #0B0E13;
   --surface-1: #12161D;
   --surface-2: #1A1F29;
-  --surface-glass: rgba(26, 31, 41, 0.55);
+  --surface-glass: rgba(26, 31, 41, 0.75);
   --border: #232935;
   --border-strong: #2E3644;
   --text-primary: #E7EAF0;
-  --text-secondary: #8B93A3;
-  --text-muted: #525A69;
+  --text-secondary: #9CA3AF;
+  --text-muted: #8C96A8;
   --cyan: #45E0D6;
   --cyan-bg: rgba(69, 224, 214, 0.12);
   --amber: #E8A33D;
@@ -20,6 +21,10 @@
   --green-bg: rgba(61, 220, 132, 0.12);
   --red: #EF5A5A;
   --red-bg: rgba(239, 90, 90, 0.12);
+  --purple: #A78BFA;
+  --purple-bg: rgba(167, 139, 250, 0.14);
+  --blue: #60A5FA;
+  --blue-bg: rgba(96, 165, 250, 0.14);
   --gray-chip: rgba(139, 147, 163, 0.14);
   --font-mono: 'IBM Plex Mono', monospace;
   --font-sans: 'IBM Plex Sans', sans-serif;
@@ -29,13 +34,29 @@
   * {
     border-color: var(--border);
   }
-  body {
+  *:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 1px;
+  }
+  html, body {
+    color-scheme: dark;
     background-color: var(--bg);
     color: var(--text-primary);
     font-family: var(--font-sans);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+  select {
+    color-scheme: dark;
+    background-color: var(--surface-1);
+    color: var(--text-primary);
+  }
+  select option,
+  select optgroup {
+    background-color: #12161D !important;
+    color: #E7EAF0 !important;
+  }
 }
+
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
@@ -120,6 +141,31 @@
 .chip.flagged {
   background: var(--amber-bg);
   color: var(--amber);
+}
+.chip.verified {
+  background: var(--green-bg);
+  color: var(--green);
+  border: 1px solid rgba(61, 220, 132, 0.25);
+}
+.chip.candidate {
+  background: var(--amber-bg);
+  color: var(--amber);
+  border: 1px solid rgba(232, 163, 61, 0.25);
+}
+.chip.missing_evidence {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+}
+.chip.rejected {
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid rgba(239, 90, 90, 0.25);
+}
+.chip.unknown {
+  background: var(--gray-chip);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
 }
 
 /* Gauges */

@@ -56,6 +56,32 @@ export interface ProductListResponse {
   total_pages: number;
 }
 
+export interface EvidenceRecord {
+  field_name: string;
+  candidate_value?: string;
+  normalized_value?: string;
+  source_url?: string;
+  source_type: 'manufacturer_page' | 'manufacturer_pdf' | 'supplier_input' | 'reference_dictionary' | 'manual_review' | string;
+  source_title?: string;
+  source_page_or_section?: string;
+  evidence_excerpt?: string;
+  extraction_method: 'deterministic_rule' | 'document_parser' | 'manual_review' | string;
+  retrieved_at: string;
+  confidence: number;
+  verification_status: 'verified' | 'candidate' | 'rejected' | 'missing_evidence' | string;
+  dictionary_identity?: string;
+}
+
+export interface ProductProvenanceSummary {
+  total_fields_tracked: number;
+  verified_fields_count: number;
+  candidate_fields_count: number;
+  missing_evidence_count: number;
+  rejected_fields_count: number;
+  verification_score: number;
+  primary_sources_breakdown: Record<string, number>;
+}
+
 export interface FieldProvenance {
   field_name: string;
   source_url?: string;
@@ -117,6 +143,8 @@ export interface ProductDetail {
   confidence_score: number;
   confidence_breakdown: Record<string, number>;
   validation_flags: string[];
+  field_evidence?: Record<string, EvidenceRecord[]>;
+  provenance_summary?: ProductProvenanceSummary;
   field_provenance?: Record<string, FieldProvenance>;
   status: string;
   delivery_columns?: Record<string, string>;
@@ -137,6 +165,10 @@ export interface CatalogStats {
   status_counts: Record<string, number>;
   dept_counts: Record<string, number>;
   top_brands: Record<string, number>;
+  sources_registered_count?: number;
+  verified_fields_count?: number;
+  candidate_fields_count?: number;
+  unsupported_fields_withheld?: number;
 }
 
 export interface FilterOptionItem {
@@ -223,6 +255,7 @@ export interface ReviewItem {
   anomaly_flags: string[];
   raw_part_desc: string;
   raw_manufacturer: string;
+  provenance_summary?: ProductProvenanceSummary;
 }
 
 export interface ReviewQueueResponse {
@@ -268,13 +301,15 @@ export interface BenchmarkReport {
   total_ground_truth_records: number;
   matched_benchmark_records: number;
   schema_column_count: number;
+  is_ground_truth_calibrated?: boolean;
+  calibration_note?: string;
   overall_scores: {
-    exact_match_rate: number;
-    normalized_match_rate: number;
-    average_levenshtein_similarity: number;
-    average_bleu_score: number;
-    average_rouge_l_f1: number;
-    triplet_attribute_f1: number;
+    exact_match_rate: number | null;
+    normalized_match_rate: number | null;
+    average_levenshtein_similarity: number | null;
+    average_bleu_score: number | null;
+    average_rouge_l_f1: number | null;
+    triplet_attribute_f1: number | null;
     mean_confidence_score: number;
   };
   hard_rule_gates: {
@@ -321,3 +356,283 @@ export interface AuthResponse {
   token_type: string;
   user: User;
 }
+
+export interface AuditRecord {
+  id: string;
+  field_name: string;
+  reviewer: string;
+  timestamp: string;
+  previous_value?: string;
+  new_value?: string;
+  action: 'edit' | 'approve' | 'reject' | 'mark_unknown' | string;
+  reason: string;
+}
+
+export interface FieldReviewItem {
+  field_name: string;
+  display_label: string;
+  raw_supplier_input?: string;
+  candidate_value?: string;
+  normalized_value?: string;
+  source_citation?: string;
+  source_excerpt?: string;
+  source_url?: string;
+  source_type: string;
+  confidence: number;
+  validation_flags: string[];
+  verification_status: 'verified' | 'candidate' | 'rejected' | 'unknown' | 'missing_evidence' | string;
+  dictionary_identity?: string;
+  is_high_risk: boolean;
+  is_resolved: boolean;
+  audit_history: AuditRecord[];
+}
+
+export interface ProductFieldReview {
+  product_id: string;
+  row_id: number;
+  mfg_part_number: string;
+  brand_name: string;
+  manufacturer_name: string;
+  status: string;
+  confidence_score: number;
+  high_risk_unresolved_count: number;
+  can_promote_to_validated: boolean;
+  fields: FieldReviewItem[];
+  audit_trail: AuditRecord[];
+}
+
+export interface FieldActionPayload {
+  field_name: string;
+  action: 'approve' | 'edit' | 'reject' | 'mark_unknown';
+  new_value?: string;
+  reason: string;
+  reviewer_notes?: string;
+}
+
+export interface PromoteValidatedResponse {
+  success: boolean;
+  product_id: string;
+  status: string;
+  message: string;
+  unresolved_high_risk_fields: string[];
+}
+
+export interface SourceRegistryEntry {
+  source_id: string;
+  url?: string;
+  mpn: string;
+  brand: string;
+  manufacturer: string;
+  source_type: string;
+  retrieved_at: string;
+  file_hash: string;
+  source_status: 'ACTIVE' | 'UNAVAILABLE' | 'REJECTED_UNTRUSTED' | 'PENDING_REVIEW' | string;
+  raw_file_path?: string;
+  processed_file_path?: string;
+  chunks_count: number;
+  error_message?: string;
+  title?: string;
+}
+
+export interface SourceRegistrationRequest {
+  url?: string;
+  mpn: string;
+  brand: string;
+  manufacturer: string;
+  source_type?: string;
+  title?: string;
+  raw_content?: string;
+}
+
+export interface SourceRegistrationResponse {
+  success: boolean;
+  source_id: string;
+  source_status: string;
+  chunks_count: number;
+  file_hash: string;
+  message: string;
+  validation_flags: string[];
+}
+
+export interface EvidenceChunk {
+  chunk_id: string;
+  source_id: string;
+  mpn: string;
+  brand: string;
+  manufacturer: string;
+  section_title: string;
+  page_number?: number;
+  text_content: string;
+  key_value_specs: Record<string, string>;
+  chunk_hash: string;
+}
+
+export interface ExtractedCandidate {
+  field_name: string;
+  candidate_value: string;
+  normalized_value: string;
+  source_url?: string;
+  source_type: string;
+  source_title: string;
+  source_page_or_section: string;
+  evidence_excerpt: string;
+  extraction_method: string;
+  retrieved_at: string;
+  confidence: number;
+  verification_status: string;
+  dictionary_identity?: string;
+  chunk_id?: string;
+  model_name?: string;
+  prompt_version?: string;
+  source_hash?: string;
+  conflicts?: string[];
+  extraction_reason?: string;
+  unresolved_reason?: string;
+  ai_extraction_unavailable?: boolean;
+}
+
+export type BatchProductStatus = 'queued' | 'retrieving' | 'extracting' | 'validating' | 'review_required' | 'completed' | 'failed';
+export type BatchJobOverallStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+
+export interface ProductJobState {
+  mpn: string;
+  brand: string;
+  manufacturer: string;
+  status: BatchProductStatus;
+  stage_message: string;
+  started_at?: string;
+  completed_at?: string;
+  duration_ms: number;
+  is_cached: boolean;
+  extraction_method: string;
+  verified_fields: number;
+  candidate_fields: number;
+  missing_evidence_fields: number;
+  rejected_fields: number;
+  conflicts_count: number;
+  conflicts: string[];
+  error_message?: string;
+  retry_count: number;
+  estimated_tokens: number;
+}
+
+export interface BatchTokenUsage {
+  prompt_tokens: number;
+  candidate_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+}
+
+export interface BatchReport {
+  job_id: string;
+  status: BatchJobOverallStatus;
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
+  duration_seconds: number;
+  total_products: number;
+  evidence_backed_products: number;
+  processed_products: number;
+  completed_products: number;
+  review_required_products: number;
+  failed_products: number;
+  cache_hits: number;
+  cache_misses: number;
+  verified_fields: number;
+  candidate_fields: number;
+  missing_evidence_fields: number;
+  rejected_fields: number;
+  gemini_failures: number;
+  token_usage: BatchTokenUsage;
+  product_states: Record<string, ProductJobState>;
+}
+
+export interface BatchStartRequest {
+  mpns?: string[];
+  max_concurrency?: number;
+  force_refresh?: boolean;
+}
+
+export interface CacheStats {
+  total_entries: number;
+  hits: number;
+  misses: number;
+  total_requests: number;
+  hit_ratio_percent: number;
+  tokens_saved_estimate: number;
+  cost_saved_usd_estimate: number;
+  file_size_bytes: number;
+  cache_file_path: string;
+}
+
+export interface ProductTimelineEvent {
+  id: string;
+  timestamp: string;
+  actor: string;
+  role: string;
+  event_type: 'AUDIT_LOG' | 'REVIEW_ACTION' | 'JOB_EVENT' | 'EVIDENCE_INGESTED' | string;
+  action: string;
+  field_name?: string;
+  old_value?: string;
+  new_value?: string;
+  reason?: string;
+  source_url?: string;
+  request_id?: string;
+}
+
+export interface ProductTimelineResponse {
+  product_id: string;
+  mpn: string;
+  total_events: number;
+  timeline: ProductTimelineEvent[];
+}
+
+export interface ExportHistoryRecord {
+  id: string;
+  user_email: string;
+  role?: string;
+  schema_version: string;
+  product_count: number;
+  checksum_sha256: string;
+  filters: Record<string, any>;
+  created_at: number;
+}
+
+export interface ExportHistoryResponse {
+  total_exports: number;
+  exports: ExportHistoryRecord[];
+}
+
+export interface SystemHealthData {
+  status: string;
+  app: string;
+  version: string;
+  request_id: string;
+  environment: string;
+  database: {
+    status: string;
+    type: string;
+    products_count: number;
+  };
+  gemini: {
+    model: string;
+    configured: boolean;
+    schema_version: string;
+    lov_version: string;
+  };
+  cache: {
+    total_entries: number;
+    hit_ratio_percent: number;
+    cost_saved_usd: number;
+  };
+  catalog: {
+    total_records: number;
+    enriched: number;
+    validated: number;
+    flagged: number;
+    mean_confidence: number;
+  };
+  hard_gates_compliant: boolean;
+}
+
+

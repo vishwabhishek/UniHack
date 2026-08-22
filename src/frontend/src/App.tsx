@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
-import { MetricsBanner } from './components/MetricsBanner';
 import { CatalogExplorer } from './components/CatalogExplorer';
 import { TransformationInspector } from './components/TransformationInspector';
 import { InteractivePlayground } from './components/InteractivePlayground';
+import { EvidenceInbox } from './components/EvidenceInbox';
 import { ReviewQueue } from './components/ReviewQueue';
 import { BenchmarkDashboard } from './components/BenchmarkDashboard';
 import { DeliveryExporter } from './components/DeliveryExporter';
+import { UserManagement } from './components/UserManagement';
 import { ToastProvider, useToast } from './components/Toast';
+
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './components/LoginPage';
 import { AuthModal } from './components/AuthModal';
@@ -24,6 +26,7 @@ const DashboardContent: React.FC = () => {
   const [inspectProductId, setInspectProductId] = useState<string | null>(null);
   const [catalogFilterStatus, setCatalogFilterStatus] = useState<string>('All');
   const [globalSearch, setGlobalSearch] = useState<string>('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -31,7 +34,7 @@ const DashboardContent: React.FC = () => {
     }
   }, [isAuthenticated]);
 
-  // Keyboard shortcut listeners (1-5 to switch tabs)
+  // Keyboard shortcut listeners (1-6 to switch tabs)
   useEffect(() => {
     if (!isAuthenticated) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,10 +48,13 @@ const DashboardContent: React.FC = () => {
 
       if (e.key === '1') setActiveTab('catalog');
       else if (e.key === '2') setActiveTab('playground');
-      else if (e.key === '3') setActiveTab('review');
-      else if (e.key === '4') setActiveTab('benchmark');
-      else if (e.key === '5') setActiveTab('export');
+      else if (e.key === '3') setActiveTab('evidence');
+      else if (e.key === '4') setActiveTab('review');
+      else if (e.key === '5') setActiveTab('benchmark');
+      else if (e.key === '6') setActiveTab('export');
+      else if (e.key === '7' && user?.role === 'admin') setActiveTab('users');
     };
+
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -73,15 +79,6 @@ const DashboardContent: React.FC = () => {
     setActiveTab('review');
   };
 
-  const handleFilterStatusFromBanner = (status: string) => {
-    if (status === 'Flagged') {
-      setActiveTab('review');
-    } else {
-      setCatalogFilterStatus(status);
-      setActiveTab('catalog');
-    }
-  };
-
   // Loading state
   if (isLoading) {
     return (
@@ -103,18 +100,28 @@ const DashboardContent: React.FC = () => {
   }
 
   return (
-    <div className="dash grid grid-cols-[220px_1fr] min-h-screen bg-[var(--bg)] text-[var(--text-primary)] font-sans">
+    <div className="h-screen bg-[var(--bg)] text-[var(--text-primary)] font-sans flex flex-row overflow-hidden relative">
       
-      {/* SIDEBAR (220px) */}
+      {/* Mobile Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/70 backdrop-blur-xs z-35 md:hidden"
+        />
+      )}
+
+      {/* SIDEBAR */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         stats={stats}
         reviewCount={reviewCount}
+        mobileOpen={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
       />
 
       {/* MAIN VIEWPORT */}
-      <div className="main flex flex-col min-w-0 min-h-screen overflow-y-auto">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         
         {/* TOPBAR */}
         <Topbar
@@ -125,53 +132,53 @@ const DashboardContent: React.FC = () => {
             setGlobalSearch(q);
             if (activeTab !== 'catalog') setActiveTab('catalog');
           }}
+          onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
 
-        {/* CONTENT AREA */}
-        <div className="content p-[26px] flex-1">
-          
-          {/* KPI Metrics Grid */}
-          <MetricsBanner
-            stats={stats}
-            onFilterStatus={handleFilterStatusFromBanner}
-          />
+        {/* WORKSPACE CONTENT AREA */}
+        <main className="p-4 sm:p-6 flex-1 max-w-7xl w-full mx-auto">
+          {activeTab === 'catalog' && (
+            <CatalogExplorer
+              onInspectProduct={handleInspect}
+              onEditProduct={handleEdit}
+              initialStatus={catalogFilterStatus}
+              globalSearch={globalSearch}
+              onSearchChange={setGlobalSearch}
+            />
+          )}
 
-          {/* Active Workspace View */}
-          <div>
-            {activeTab === 'catalog' && (
-              <CatalogExplorer
-                onInspectProduct={handleInspect}
-                onEditProduct={handleEdit}
-                initialStatus={catalogFilterStatus}
-                globalSearch={globalSearch}
-                onSearchChange={setGlobalSearch}
-              />
-            )}
+          {activeTab === 'playground' && (
+            <InteractivePlayground />
+          )}
 
-            {activeTab === 'playground' && (
-              <InteractivePlayground />
-            )}
+          {activeTab === 'evidence' && (
+            <EvidenceInbox />
+          )}
 
-            {activeTab === 'review' && (
-              <ReviewQueue
-                onInspectProduct={handleInspect}
-                onRefreshCatalog={loadGlobalState}
-              />
-            )}
+          {activeTab === 'review' && (
+            <ReviewQueue
+              onInspectProduct={handleInspect}
+              onRefreshCatalog={loadGlobalState}
+            />
+          )}
 
-            {activeTab === 'benchmark' && (
-              <BenchmarkDashboard />
-            )}
+          {activeTab === 'benchmark' && (
+            <BenchmarkDashboard />
+          )}
 
-            {activeTab === 'export' && (
-              <DeliveryExporter />
-            )}
-          </div>
-        </div>
+          {activeTab === 'export' && (
+            <DeliveryExporter />
+          )}
+
+          {activeTab === 'users' && (
+            <UserManagement currentUser={user} />
+          )}
+        </main>
+
 
       </div>
 
-      {/* Dual-Pane Transformation Workbench Modal */}
+      {/* Evidence & Transformation Workbench Modal */}
       {inspectProductId && (
         <TransformationInspector
           productId={inspectProductId}
@@ -181,7 +188,7 @@ const DashboardContent: React.FC = () => {
         />
       )}
 
-      {/* Security & Authentication Modal */}
+      {/* Security & RBAC Profile Modal */}
       <AuthModal />
 
     </div>

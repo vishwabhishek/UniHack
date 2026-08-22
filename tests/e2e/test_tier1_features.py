@@ -281,8 +281,9 @@ class TestFeature4AttributeExtractor:
     """Test suite for Feature 4: Attribute Extractor & LOV Engine."""
 
     def test_extractor_dishwasher_mounting_type(self, sample_dishwasher_frigidaire: Dict[str, Any], pipeline_engine):
-        """Verify extraction of Mounting Type attribute conforming strictly to canonical LOV."""
-        sanitized = pipeline_engine.sanitizer.sanitize(pipeline_engine.raw_cls(**sample_dishwasher_frigidaire))
+        """Verify extraction of Mounting Type attribute conforming strictly to canonical LOV when evidence is present."""
+        rec = dict(sample_dishwasher_frigidaire, part_desc="PDSH4816AF Built-In Dishwasher Leg Mounting SS")
+        sanitized = pipeline_engine.sanitizer.sanitize(pipeline_engine.raw_cls(**rec))
         entity = pipeline_engine.resolver.resolve(sanitized)
         tax = pipeline_engine.taxonomy.classify(sanitized, entity)
         attr_data = pipeline_engine.extractor.extract(sanitized, entity, tax)
@@ -494,7 +495,8 @@ class TestFeature6DescriptionGenerator:
 
     def test_long_desc1_technical_sentence(self, sample_dishwasher_frigidaire: Dict[str, Any], pipeline_engine):
         """Assert that LONG_DESC1 provides a complete technical specification sentence."""
-        enriched = pipeline_engine.process_record(sample_dishwasher_frigidaire)
+        rec = dict(sample_dishwasher_frigidaire, part_desc="PDSH4816AF Built-In Dishwasher Leg Mounting 120V 15A 24 in W x 24-1/4 in D SS")
+        enriched = pipeline_engine.process_record(rec)
         
         long_desc = enriched.long_desc1
         assert "FRIGIDAIRE" in long_desc

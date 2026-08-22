@@ -47,6 +47,9 @@ class Settings(BaseModel):
     benchmark_report_path: Path = project_root / "data" / "output" / "benchmark_report.json"
     dictionaries_dir: Path = project_root / "data" / "dictionaries"
     output_dir: Path = project_root / "data" / "output"
+    # Database configuration
+    database_path: Path = Path(os.getenv("DATABASE_PATH", str(project_root / "data" / "unilog_pim.db")))
+    database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{project_root / 'data' / 'unilog_pim.db'}")
     
     # Frontend build assets
     frontend_dist_dir: Path = project_root / "src" / "frontend" / "dist"
@@ -63,12 +66,24 @@ class Settings(BaseModel):
     # Security & Cryptography Configuration
     jwt_secret: str = os.getenv("JWT_SECRET", "dev-insecure-secret-key-change-in-production")
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
-    jwt_expiration_seconds: int = int(os.getenv("JWT_EXPIRATION_SECONDS", "604800"))
+    jwt_expiration_seconds: int = int(os.getenv("JWT_EXPIRATION_SECONDS", "1800"))  # 30 minutes default
 
-    # Initial Admin Bootstrap (Optional)
-    admin_initial_email: Optional[str] = os.getenv("ADMIN_INITIAL_EMAIL", "admin@unilog.com")
-    admin_initial_password: Optional[str] = os.getenv("ADMIN_INITIAL_PASSWORD", "ChangeMeAdmin2026!")
+    # Initial Admin Bootstrap (Optional in development, required in production)
+    admin_initial_email: Optional[str] = os.getenv("ADMIN_INITIAL_EMAIL", "admin@unilog.com" if os.getenv("ENVIRONMENT", "development").lower() != "production" else None)
+    admin_initial_password: Optional[str] = os.getenv("ADMIN_INITIAL_PASSWORD", "Admin@123456" if os.getenv("ENVIRONMENT", "development").lower() != "production" else None)
     admin_initial_name: Optional[str] = os.getenv("ADMIN_INITIAL_NAME", "System Administrator")
+
+    # Gemini AI Extraction Provider Configuration
+    gemini_api_key: Optional[str] = os.getenv("GEMINI_API_KEY", None)
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    gemini_enabled: bool = (
+        os.getenv("GEMINI_ENABLED", "false").lower() in ("true", "1", "yes")
+        and bool(os.getenv("GEMINI_API_KEY", "").strip())
+    )
+    gemini_schema_version: str = os.getenv("GEMINI_SCHEMA_VERSION", "v1.0.0")
+    gemini_lov_version: str = os.getenv("GEMINI_LOV_VERSION", "lov_v1.0.0")
+    gemini_input_cost_per_million: float = float(os.getenv("GEMINI_INPUT_COST_PER_MILLION", "0.075"))
+    gemini_output_cost_per_million: float = float(os.getenv("GEMINI_OUTPUT_COST_PER_MILLION", "0.300"))
 
     def __init__(self, **data):
         super().__init__(**data)

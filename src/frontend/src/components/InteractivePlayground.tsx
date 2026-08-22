@@ -8,6 +8,7 @@ import {
 import { TransformResponse, PlaygroundPreset } from '../types';
 import { transformProduct, fetchPlaygroundPresets } from '../services/api';
 import { useToast } from './Toast';
+import { PageHeader } from './common/PageHeader';
 
 export const InteractivePlayground: React.FC = () => {
   const { showToast } = useToast();
@@ -89,36 +90,31 @@ export const InteractivePlayground: React.FC = () => {
   return (
     <div className="space-y-4 font-sans">
       
-      {/* Header Bar */}
-      <div className="p-[16px_18px] rounded-[10px] bg-[var(--surface-2)] border border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
-        <div>
-          <h2 className="text-xs font-mono font-semibold text-[var(--text-primary)] uppercase tracking-wider">
-            REAL-TIME TRANSFORMATION SANDBOX
-          </h2>
-          <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            Paste arbitrary messy distributor strings to observe deterministic 7-stage enrichment
-          </p>
-        </div>
+      {/* Standard Page Header */}
+      <PageHeader
+        title="Real-Time Transformation Sandbox"
+        description="Paste arbitrary messy distributor strings to observe deterministic 7-stage enrichment and normalization."
+        actions={
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-wider font-semibold">Presets:</span>
+            <select
+              value={selectedPresetId}
+              onChange={(e) => {
+                const p = presets.find((x) => x.id === e.target.value);
+                if (p) handleSelectPreset(p);
+              }}
+              className="bg-[var(--surface-1)] text-[var(--text-primary)] border border-[var(--border-strong)] rounded-md px-3 py-1 text-xs font-mono focus:outline-none focus:border-[var(--cyan)] cursor-pointer hover:border-[var(--cyan)] transition-colors shadow-xs"
+            >
+              {presets.map((p) => (
+                <option key={p.id} value={p.id} className="bg-[#12161D] text-[#E7EAF0] py-1">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Preset Selector */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase">Presets:</span>
-          <select
-            value={selectedPresetId}
-            onChange={(e) => {
-              const p = presets.find((x) => x.id === e.target.value);
-              if (p) handleSelectPreset(p);
-            }}
-            className="chip-filter bg-[var(--surface-1)] text-[var(--text-secondary)] focus:outline-none cursor-pointer"
-          >
-            {presets.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+        }
+      />
 
       {/* Main Split Interface */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

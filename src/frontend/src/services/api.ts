@@ -39,62 +39,28 @@ export function deleteCookie(name: string) {
   document.cookie = `${encodeURIComponent(name)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
 }
 
-// In-Memory Token & User Profile Manager with localStorage and Cookie sync
-let authToken: string | null = localStorage.getItem('unilog_auth_token') || getCookie('unilog_auth_token');
+// The server owns the session in an HttpOnly cookie. Do not persist JWTs in
+// browser-readable storage where an XSS vulnerability could exfiltrate them.
+let authToken: string | null = null;
 
 export function setAuthToken(token: string | null, userProfile?: User | null) {
-  authToken = token;
-  if (token) {
-    localStorage.setItem('unilog_auth_token', token);
-    setCookie('unilog_auth_token', token, 7);
-    if (userProfile) {
-      localStorage.setItem('unilog_user_profile', JSON.stringify(userProfile));
-      setCookie('unilog_user_email', userProfile.email, 7);
-      setCookie('unilog_user_role', userProfile.role, 7);
-      setCookie('unilog_user_name', userProfile.name, 7);
-    }
+  void token; // JWT is returned only for backward-compatible API clients.
+  authToken = null;
+  if (userProfile) {
+    sessionStorage.setItem('unilog_user_profile', JSON.stringify(userProfile));
   } else {
-    localStorage.removeItem('unilog_auth_token');
-    localStorage.removeItem('unilog_user_profile');
-    deleteCookie('unilog_auth_token');
-    deleteCookie('unilog_user_email');
-    deleteCookie('unilog_user_role');
-    deleteCookie('unilog_user_name');
+    sessionStorage.removeItem('unilog_user_profile');
   }
 }
 
 export function getAuthToken(): string | null {
-  if (authToken) return authToken;
-  const lsToken = localStorage.getItem('unilog_auth_token');
-  if (lsToken) {
-    authToken = lsToken;
-    return lsToken;
-  }
-  const cookieToken = getCookie('unilog_auth_token');
-  if (cookieToken) {
-    authToken = cookieToken;
-    return cookieToken;
-  }
-  return null;
+  return authToken;
 }
 
 export function getSavedUserProfile(): User | null {
   try {
-    const raw = localStorage.getItem('unilog_user_profile');
+    const raw = sessionStorage.getItem('unilog_user_profile');
     if (raw) return JSON.parse(raw);
-    const email = getCookie('unilog_user_email');
-    const role = getCookie('unilog_user_role');
-    const name = getCookie('unilog_user_name');
-    if (email && role && name) {
-      return {
-        id: 'usr_cookie_cached',
-        email,
-        name,
-        role: role as any,
-        avatar_color: '#45E0D6',
-        created_at: Math.floor(Date.now() / 1000)
-      };
-    }
   } catch (e) {
     console.error('Failed to parse cached user profile:', e);
   }
@@ -102,12 +68,12 @@ export function getSavedUserProfile(): User | null {
 }
 
 function getAuthHeaders(): Record<string, string> {
-  const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json'
   };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  const csrfToken = getCookie('unilog_csrf_token');
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken;
   }
   return headers;
 }
@@ -127,7 +93,7 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
     throw new Error(errorData.detail || 'Failed to login');
   }
   const data: AuthResponse = await res.json();
-  setAuthToken(data.token);
+  setAuthToken(data.token, data.user);
   return data;
 }
 
@@ -142,7 +108,7 @@ export async function registerUser(email: string, password: string, name: string
     throw new Error(errorData.detail || 'Failed to register account');
   }
   const data: AuthResponse = await res.json();
-  setAuthToken(data.token);
+  setAuthToken(data.token, data.user);
   return data;
 }
 
@@ -152,6 +118,14 @@ export async function getCurrentUserProfile(): Promise<User> {
   });
   if (!res.ok) throw new Error(`Failed to fetch current user: ${res.statusText}`);
   return res.json();
+}
+
+export async function logoutUser(): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/logout`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to log out: ${res.statusText}`);
 }
 
 // ============================================================================
@@ -371,6 +345,46 @@ export async function updateProduct(id: string, payload: Partial<ProductDetail>)
   return res.json();
 }
 
+export async function fetchProductFieldReview(id: string): Promise<import('../types').ProductFieldReview> {
+  const res = await fetch(`${API_BASE}/review/${encodeURIComponent(id)}/fields`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch field review: ${res.statusText}`);
+  return res.json();
+}
+
+export async function submitFieldAction(
+  id: string,
+  payload: import('../types').FieldActionPayload
+): Promise<import('../types').ProductFieldReview> {
+  const res = await fetch(`${API_BASE}/review/${encodeURIComponent(id)}/field-action`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Field action failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function promoteProductValidated(
+  id: string,
+  notes?: string
+): Promise<import('../types').PromoteValidatedResponse> {
+  const res = await fetch(`${API_BASE}/review/${encodeURIComponent(id)}/promote-validated`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ approved: true, notes })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Validation promotion failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
 // ============================================================================
 // Benchmark & Export Endpoints
 // ============================================================================
@@ -414,3 +428,214 @@ export function getExportXlsxUrl(status?: string, search?: string): string {
   if (search) query.append('search', search);
   return `${API_BASE}/export/xlsx?${query.toString()}`;
 }
+
+// ============================================================================
+// Official Manufacturer Evidence Registry Endpoints
+// ============================================================================
+
+export async function fetchSourceRegistry(): Promise<import('../types').SourceRegistryEntry[]> {
+  const res = await fetch(`${API_BASE}/evidence/registry`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch source registry: ${res.statusText}`);
+  return res.json();
+}
+
+export async function registerEvidenceSource(
+  payload: import('../types').SourceRegistrationRequest
+): Promise<import('../types').SourceRegistrationResponse> {
+  const res = await fetch(`${API_BASE}/evidence/register`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Source registration failed: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function queryEvidence(params: {
+  mpn?: string;
+  keyword?: string;
+}): Promise<{ mpn: string; total_chunks: number; chunks: import('../types').EvidenceChunk[]; candidates: import('../types').ExtractedCandidate[] }> {
+  const query = new URLSearchParams();
+  if (params.mpn) query.append('mpn', params.mpn);
+  if (params.keyword) query.append('keyword', params.keyword);
+
+  const res = await fetch(`${API_BASE}/evidence/query?${query.toString()}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to query evidence: ${res.statusText}`);
+  return res.json();
+}
+
+// ============================================================================
+// Batch Evidence Enrichment & Cache Management Endpoints
+// ============================================================================
+
+export async function startBatchEnrichment(
+  payload: import('../types').BatchStartRequest = {}
+): Promise<import('../types').BatchReport> {
+  const res = await fetch(`${API_BASE}/evidence/batch/start`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Failed to start batch enrichment: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function fetchLatestBatchJob(): Promise<import('../types').BatchReport | null> {
+  const res = await fetch(`${API_BASE}/evidence/batch/latest`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch latest batch job: ${res.statusText}`);
+  return res.json();
+}
+
+export async function fetchBatchJobStatus(jobId: string): Promise<import('../types').BatchReport> {
+  const res = await fetch(`${API_BASE}/evidence/batch/status/${encodeURIComponent(jobId)}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch batch status: ${res.statusText}`);
+  return res.json();
+}
+
+export async function cancelBatchJob(jobId: string): Promise<{ message: string; job_id: string }> {
+  const res = await fetch(`${API_BASE}/evidence/batch/cancel/${encodeURIComponent(jobId)}`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to cancel batch job: ${res.statusText}`);
+  return res.json();
+}
+
+export async function fetchCacheStats(): Promise<import('../types').CacheStats> {
+  const res = await fetch(`${API_BASE}/evidence/cache/stats`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch cache stats: ${res.statusText}`);
+  return res.json();
+}
+
+export async function clearExtractionCache(): Promise<{ message: string; stats: import('../types').CacheStats }> {
+  const res = await fetch(`${API_BASE}/evidence/cache/clear`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to clear cache: ${res.statusText}`);
+  return res.json();
+}
+
+// ============================================================================
+// User Management Endpoints (Admin RBAC)
+// ============================================================================
+
+export async function fetchUsers(): Promise<User[]> {
+  const res = await fetch(`${API_BASE}/auth/users`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch users: ${res.statusText}`);
+  return res.json();
+}
+
+export async function updateUserRole(userId: string, role: string): Promise<{ status: string; message: string; user: User }> {
+  const res = await fetch(`${API_BASE}/auth/users/${encodeURIComponent(userId)}/role`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ role })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Failed to update user role: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+// ============================================================================
+// Product Timeline & Export History Endpoints
+// ============================================================================
+
+export async function fetchProductTimeline(productId: string): Promise<import('../types').ProductTimelineResponse> {
+  const res = await fetch(`${API_BASE}/review/${encodeURIComponent(productId)}/timeline`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch timeline: ${res.statusText}`);
+  return res.json();
+}
+
+export async function fetchExportHistory(limit: number = 25): Promise<import('../types').ExportHistoryResponse> {
+  const res = await fetch(`${API_BASE}/export/history?limit=${limit}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch export history: ${res.statusText}`);
+  return res.json();
+}
+
+export async function fetchSystemHealth(): Promise<import('../types').SystemHealthData> {
+  const res = await fetch(`${API_BASE}/system/health`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch system health: ${res.statusText}`);
+  return res.json();
+}
+
+// ============================================================================
+// Source Lifecycle Management Endpoints
+// ============================================================================
+
+export async function markSourceStale(sourceId: string, reason?: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE}/evidence/source/${encodeURIComponent(sourceId)}/mark-stale`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ reason: reason || 'Marked stale by specialist' })
+  });
+  if (!res.ok) throw new Error(`Failed to mark source stale: ${res.statusText}`);
+  return res.json();
+}
+
+export async function supersedeSource(sourceId: string, newSourceId: string, reason?: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE}/evidence/source/${encodeURIComponent(sourceId)}/supersede`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ new_source_id: newSourceId, reason: reason || 'Superseded by newer source' })
+  });
+  if (!res.ok) throw new Error(`Failed to supersede source: ${res.statusText}`);
+  return res.json();
+}
+
+export async function rejectSource(sourceId: string, reason: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE}/evidence/source/${encodeURIComponent(sourceId)}/reject`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ reason })
+  });
+  if (!res.ok) throw new Error(`Failed to reject source: ${res.statusText}`);
+  return res.json();
+}
+
+export async function reingestSource(sourceId: string): Promise<import('../types').SourceRegistrationResponse> {
+  const res = await fetch(`${API_BASE}/evidence/source/${encodeURIComponent(sourceId)}/re-ingest`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `Failed to re-ingest source: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function fetchSourceHistory(sourceId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/evidence/source/${encodeURIComponent(sourceId)}/history`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch source history: ${res.statusText}`);
+  return res.json();
+}
+

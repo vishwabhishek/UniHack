@@ -54,7 +54,12 @@
       "Ceramic",
       "Leather",
       "Nylon",
-      "Plastic"
+      "Plastic",
+      "Copper",
+      "Bronze",
+      "Zirconia Alumina",
+      "Aluminum Oxide",
+      "Silicon Carbide"
     ],
     "synonyms": {
       "ss": "Stainless Steel",
@@ -66,6 +71,9 @@
       "aluminum": "Aluminum",
       "brs": "Brass",
       "brass": "Brass",
+      "copper": "Copper",
+      "cu": "Copper",
+      "bronze": "Bronze",
       "pvc": "PVC",
       "comp": "Composite",
       "composite": "Composite",
@@ -168,8 +176,190 @@
       "14"
     ]
   },
+  "fitting_types": {
+    "allowed": [
+      "90 deg Elbow",
+      "45 deg Elbow",
+      "Straight Tee",
+      "Reducing Tee",
+      "Coupling",
+      "Reducing Coupling",
+      "Male Adapter",
+      "Female Adapter",
+      "Hex Bushing",
+      "Union",
+      "Cap",
+      "Square Head Plug",
+      "Hex Head Plug",
+      "Close Nipple",
+      "Hex Nipple",
+      "Cord Grip Connector",
+      "Straight Connector"
+    ],
+    "synonyms": {
+      "90 elbow": "90 deg Elbow",
+      "90 deg elbow": "90 deg Elbow",
+      "90 degree elbow": "90 deg Elbow",
+      "elbow 90": "90 deg Elbow",
+      "45 elbow": "45 deg Elbow",
+      "45 deg elbow": "45 deg Elbow",
+      "tee": "Straight Tee",
+      "straight tee": "Straight Tee",
+      "reducing tee": "Reducing Tee",
+      "coupling": "Coupling",
+      "straight coupling": "Coupling",
+      "reducing coupling": "Reducing Coupling",
+      "male adapter": "Male Adapter",
+      "female adapter": "Female Adapter",
+      "hex bushing": "Hex Bushing",
+      "bushing": "Hex Bushing",
+      "union": "Union",
+      "cap": "Cap",
+      "plug": "Hex Head Plug",
+      "nipple": "Hex Nipple",
+      "cord grip": "Cord Grip Connector",
+      "cord connector": "Cord Grip Connector"
+    }
+  },
+  "connection_types": {
+    "allowed": [
+      "FNPT x FNPT",
+      "MNPT x MNPT",
+      "MNPT x FNPT",
+      "Push-to-Connect",
+      "Compression",
+      "Flanged",
+      "Sweat",
+      "Solder",
+      "Socket Weld",
+      "Threaded",
+      "Barbed",
+      "Male NPT",
+      "Female NPT",
+      "Cup x Cup"
+    ],
+    "synonyms": {
+      "push-to-connect": "Push-to-Connect",
+      "push to connect": "Push-to-Connect",
+      "push fit": "Push-to-Connect",
+      "push-fit": "Push-to-Connect",
+      "compression": "Compression",
+      "comp": "Compression",
+      "sweat": "Sweat",
+      "solder": "Solder",
+      "cup x cup": "Sweat",
+      "c x c": "Sweat",
+      "female npt": "Female NPT",
+      "male npt": "Male NPT",
+      "fnpt": "Female NPT",
+      "mnpt": "Male NPT",
+      "threaded": "Threaded",
+      "flanged": "Flanged"
+    }
+  },
+  "pressure_ratings": {
+    "allowed": [
+      "125 psi",
+      "150 psi",
+      "200 psi",
+      "250 psi",
+      "300 psi",
+      "600 psi",
+      "1000 psi",
+      "2000 psi",
+      "3000 psi"
+    ],
+    "synonyms": {
+      "125 psi": "125 psi",
+      "150 psi": "150 psi",
+      "200 psi": "200 psi",
+      "250 psi": "250 psi",
+      "300 psi": "300 psi",
+      "600 psi": "600 psi"
+    }
+  },
+  "nominal_sizes": {
+    "allowed": [
+      "1/8 in",
+      "1/4 in",
+      "3/8 in",
+      "1/2 in",
+      "5/8 in",
+      "3/4 in",
+      "1 in",
+      "1-1/4 in",
+      "1-1/2 in",
+      "2 in",
+      "2-1/2 in",
+      "3 in",
+      "4 in",
+      "6 in",
+      "8 in"
+    ],
+    "synonyms": {
+      "1/2\"": "1/2 in",
+      "1/2 in.": "1/2 in",
+      "1/2-in": "1/2 in",
+      "3/4\"": "3/4 in",
+      "3/4 in.": "3/4 in",
+      "3/4-in": "3/4 in",
+      "1\"": "1 in",
+      "1 in.": "1 in",
+      "2\"": "2 in"
+    }
+  },
+  "faucet_types": {
+    "allowed": [
+      "Pull-Down Faucet",
+      "Pull-Out Faucet",
+      "Single-Hole Faucet",
+      "Centerset Faucet",
+      "Widespread Faucet",
+      "Wall Mount Faucet",
+      "Commercial Faucet"
+    ],
+    "synonyms": {
+      "pulldown": "Pull-Down Faucet",
+      "pull-down": "Pull-Down Faucet",
+      "pull down": "Pull-Down Faucet",
+      "pullout": "Pull-Out Faucet",
+      "pull-out": "Pull-Out Faucet",
+      "single hole": "Single-Hole Faucet",
+      "single-hole": "Single-Hole Faucet",
+      "centerset": "Centerset Faucet",
+      "widespread": "Widespread Faucet"
+    }
+  },
+  "flow_rates": {
+    "allowed": [
+      "1.2 gpm",
+      "1.5 gpm",
+      "1.8 gpm",
+      "2.2 gpm"
+    ],
+    "synonyms": {
+      "1.2 gpm": "1.2 gpm",
+      "1.5 gpm": "1.5 gpm",
+      "1.8 gpm": "1.8 gpm",
+      "2.2 gpm": "2.2 gpm"
+    }
+  },
   "invoice_abbreviations": {
     "DISHWASHER": "DISHWASHER",
+    "FAUCET": "FAUCET",
+    "FITTING": "FTG",
+    "ELBOW": "ELB",
+    "90 DEG ELBOW": "90 ELB",
+    "TEE": "TEE",
+    "COUPLING": "CPLG",
+    "ADAPTER": "ADPT",
+    "CONNECTOR": "CONN",
+    "CORD GRIP": "CORD GRP",
+    "PUSH-TO-CONNECT": "PUSH",
+    "SWEAT": "SWT",
+    "COPPER": "CU",
+    "BRASS": "BRS",
+    "PULL-DOWN": "PULL-DWN",
     "BUILT-IN": "BLTLN",
     "BUILT IN": "BLTLN",
     "LEG": "LEG",

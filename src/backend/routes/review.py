@@ -15,7 +15,11 @@ from ..schemas import (
     ApprovalPayload,
     ApprovalResponse,
     AttributeTripleSchema,
-    PhysicalDimensionsSchema
+    PhysicalDimensionsSchema,
+    ProductFieldReviewResponse,
+    FieldActionPayload,
+    PromoteValidatedResponse,
+    AuditRecordSchema
 )
 
 router = APIRouter(prefix="/api/review", tags=["Review Queue"])
@@ -37,6 +41,20 @@ def get_review_queue(current_user: User = Depends(get_current_user)):
         if p.confidence_score < 0.85:
             low_conf_cnt += 1
 
+        prov_sum_schema = None
+        if hasattr(p, "provenance_summary") and p.provenance_summary:
+            ps = p.provenance_summary
+            from ..schemas import ProductProvenanceSummarySchema
+            prov_sum_schema = ProductProvenanceSummarySchema(
+                total_fields_tracked=ps.total_fields_tracked,
+                verified_fields_count=ps.verified_fields_count,
+                candidate_fields_count=ps.candidate_fields_count,
+                missing_evidence_count=ps.missing_evidence_count,
+                rejected_fields_count=ps.rejected_fields_count,
+                verification_score=ps.verification_score,
+                primary_sources_breakdown=ps.primary_sources_breakdown
+            )
+
         review_items.append(
             ReviewItem(
                 id=str(row_id_val),
@@ -53,7 +71,8 @@ def get_review_queue(current_user: User = Depends(get_current_user)):
                 status=p.status,
                 anomaly_flags=p.validation_flags,
                 raw_part_desc=p.raw.part_desc,
-                raw_manufacturer=p.raw.part_manuf or ""
+                raw_manufacturer=p.raw.part_manuf or "",
+                provenance_summary=prov_sum_schema
             )
         )
 
@@ -65,23 +84,115 @@ def get_review_queue(current_user: User = Depends(get_current_user)):
     )
 
 
+@router.get("/{product_id}/fields", response_model=ProductFieldReviewResponse)
+def get_product_field_review(product_id: str, current_user: User = Depends(get_current_user)):
+    """Retrieve structured field-level evidence review items and audit trail for a product."""
+    data = catalog_state.get_product_field_review(product_id)
+    if not data:
+        raise HTTPException(status_code=404, detail=f"Product with ID '{product_id}' not found.")
+    return data
+
+
+@router.post("/{product_id}/field-action", response_model=ProductFieldReviewResponse)
+def submit_field_action(
+    product_id: str,
+    payload: FieldActionPayload,
+    current_user: User = Depends(require_roles(["admin", "specialist", "reviewer"]))
+):
+    """
+    Apply a granular field curation action (approve, edit, reject, mark_unknown).
+    Role enforcement:
+    - 'edit': specialist, reviewer, admin
+    - 'approve', 'reject', 'mark_unknown': reviewer, admin
+    """
+    if payload.action in ("approve", "reject", "mark_unknown") and current_user.role not in ("reviewer", "admin"):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Forbidden: Action '{payload.action}' requires 'reviewer' or 'admin' role. Your role is '{current_user.role}'."
+        )
+
+    updated_review = catalog_state.apply_field_action(
+        key=product_id,
+        field_name=payload.field_name,
+        action=payload.action,
+        new_value=payload.new_value,
+        reason=payload.reason,
+        reviewer=current_user.email or current_user.name
+    )
+    if not updated_review:
+        raise HTTPException(status_code=404, detail=f"Product with ID '{product_id}' not found.")
+    return updated_review
+
+
+@router.post("/{product_id}/promote-to-validated", response_model=PromoteValidatedResponse)
+@router.post("/{product_id}/promote-validated", response_model=PromoteValidatedResponse)
+def promote_to_validated(
+    product_id: str,
+    payload: Optional[ApprovalPayload] = None,
+    current_user: User = Depends(require_roles(["admin", "reviewer"]))
+):
+    """
+    Promote a product to 'Validated' status.
+    Rejects promotion if any high-risk field is unresolved, missing evidence, or conflicting.
+    """
+    notes = payload.notes if payload else ""
+    success, msg, unresolved = catalog_state.promote_to_validated(
+        key=product_id,
+        reviewer=current_user.email or current_user.name,
+        notes=notes
+    )
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Promotion blocked: {msg}. Unresolved high-risk fields: {', '.join(unresolved)}"
+        )
+
+    return PromoteValidatedResponse(
+        success=True,
+        product_id=product_id,
+        status="Validated",
+        message=msg,
+        unresolved_high_risk_fields=unresolved
+    )
+
+
+@router.get("/{product_id}/audit-trail", response_model=List[AuditRecordSchema])
+def get_product_audit_trail(product_id: str, current_user: User = Depends(get_current_user)):
+    """Retrieve complete immutable audit history for a product."""
+    data = catalog_state.get_product_field_review(product_id)
+    if not data:
+        raise HTTPException(status_code=404, detail=f"Product with ID '{product_id}' not found.")
+    return data.audit_trail
+
+
 @router.post("/{product_id}/approve", response_model=ApprovalResponse)
 def approve_product(
     product_id: str,
     payload: Optional[ApprovalPayload] = None,
-    current_user: User = Depends(require_roles(["admin", "specialist", "reviewer"]))
+    current_user: User = Depends(require_roles(["admin", "reviewer"]))
 ):
-    """Approve a product record for production delivery, promoting status to 'Validated'."""
+    """
+    Approve a product record for production delivery.
+    Strictly passes through the guarded promote_to_validated workflow to ensure
+    that all high-risk fields have verified evidence or explicit human resolution.
+    """
     notes = payload.notes if payload else ""
-    prod = catalog_state.approve_product(product_id, notes=notes)
-    if not prod:
-        raise HTTPException(status_code=404, detail=f"Product with ID '{product_id}' not found.")
+    success, msg, unresolved = catalog_state.promote_to_validated(
+        key=product_id,
+        reviewer=current_user.email or current_user.name,
+        notes=notes
+    )
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Promotion blocked: {msg}. Unresolved high-risk fields: {', '.join(unresolved)}"
+        )
 
     return ApprovalResponse(
         success=True,
         status="Validated",
         id=product_id,
-        message=f"Product {product_id} successfully approved and marked as Validated."
+        message=f"Product {product_id} successfully approved and promoted to Validated."
     )
 
 
@@ -89,7 +200,7 @@ def approve_product(
 def reject_product(
     product_id: str,
     payload: Optional[ApprovalPayload] = None,
-    current_user: User = Depends(require_roles(["admin", "specialist", "reviewer"]))
+    current_user: User = Depends(require_roles(["admin", "reviewer"]))
 ):
     """Flag or reject a product record with feedback for review."""
     reason = payload.notes if (payload and payload.notes) else "Rejected by human reviewer"
@@ -190,3 +301,25 @@ def update_product_detail(
         status=prod.status,
         delivery_columns=deliv_dict
     )
+
+
+@router.get("/{product_id}/timeline")
+def get_product_timeline(
+    product_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Retrieve the unified chronological activity timeline for a product."""
+    from ..db.repositories.audit import audit_repo
+    res = catalog_state.get_product(product_id)
+    if not res:
+        raise HTTPException(status_code=404, detail=f"Product with ID '{product_id}' not found.")
+    prod, _ = res
+    mpn = prod.mfg_part_number or prod.part_number
+    timeline = audit_repo.get_product_activity_timeline(product_id=product_id, mpn=mpn)
+    return {
+        "product_id": product_id,
+        "mpn": mpn,
+        "total_events": len(timeline),
+        "timeline": timeline,
+    }
+

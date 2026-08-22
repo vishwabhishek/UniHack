@@ -1,0 +1,39 @@
+[
+  {
+    "chunk_id": "chk_shxm4ay55n_1_0340cf80",
+    "source_id": "src_shxm4ay55n_bc8c9eaf",
+    "mpn": "SHXM4AY55N",
+    "brand": "BOSCH\u00ae",
+    "manufacturer": "BSH Home Appliances Corporation",
+    "section_title": "Technical Specifications",
+    "page_number": 1,
+    "text_content": "Installation Type: Built-In\nTub Material: Stainless Steel TallTub with Polypropylene Base\nSound Level: 48 dBA\nNumber of Cycles: 5\nVoltage Rating: 120 V\nAmps: 15 A\nEnergy Star Qualified: Yes\nPlace Settings: 14",
+    "key_value_specs": {
+      "Installation Type": "Built-In",
+      "Tub Material": "Stainless Steel TallTub with Polypropylene Base",
+      "Sound Level": "48 dBA",
+      "Number of Cycles": "5",
+      "Voltage Rating": "120 V",
+      "Amps": "15 A",
+      "Energy Star Qualified": "Yes",
+      "Place Settings": "14"
+    },
+    "chunk_hash": "0340cf80484c8d1a"
+  },
+  {
+    "chunk_id": "chk_shxm4ay55n_2_634876e6",
+    "source_id": "src_shxm4ay55n_bc8c9eaf",
+    "mpn": "SHXM4AY55N",
+    "brand": "BOSCH\u00ae",
+    "manufacturer": "BSH Home Appliances Corporation",
+    "section_title": "Dimensions",
+    "page_number": 1,
+    "text_content": "Width: 23-9/16 in\nHeight: 33-7/8 in\nDepth: 22-9/16 in",
+    "key_value_specs": {
+      "Width": "23-9/16 in",
+      "Height": "33-7/8 in",
+      "Depth": "22-9/16 in"
+    },
+    "chunk_hash": "634876e6d1e9fb14"
+  }
+]

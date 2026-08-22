@@ -10,39 +10,66 @@ Combines:
 from __future__ import annotations
 
 import time
+import logging
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
-from rank_bm25 import BM25Okapi
-from fastembed import TextEmbedding
 
-from llama_index.core import Document
-from llama_index.core.schema import TextNode
+logger = logging.getLogger(__name__)
+
+try:
+    from rank_bm25 import BM25Okapi
+    HAS_BM25 = True
+except ImportError:
+    BM25Okapi = None
+    HAS_BM25 = False
+
+try:
+    from fastembed import TextEmbedding
+    HAS_FASTEMBED = True
+except ImportError:
+    TextEmbedding = None
+    HAS_FASTEMBED = False
+
+try:
+    from llama_index.core import Document
+    from llama_index.core.schema import TextNode
+    HAS_LLAMA_INDEX = True
+except ImportError:
+    Document = None
+    TextNode = None
+    HAS_LLAMA_INDEX = False
 
 from ..pipeline.models import EnrichedProduct
 
 
 class CatalogRAGEngine:
-    """LlamaIndex & Neural Embedding RAG Engine for Industrial Product Catalog."""
+    """LlamaIndex & Neural Embedding RAG Engine for Industrial Product Catalog (with safe fallback)."""
 
     def __init__(self, embedding_model_name: str = "BAAI/bge-small-en-v1.5"):
         self.embedding_model_name = embedding_model_name
-        self._embed_model: Optional[TextEmbedding] = None
-        self._documents: List[Document] = []
-        self._nodes: List[TextNode] = []
+        self._embed_model: Optional[Any] = None
+        self._documents: List[Any] = []
+        self._nodes: List[Any] = []
         self._dense_embeddings: Optional[np.ndarray] = None
-        self._bm25: Optional[BM25Okapi] = None
+        self._bm25: Optional[Any] = None
         self._bm25_corpus: List[List[str]] = []
         self._products: List[EnrichedProduct] = []
         self._product_by_id: Dict[str, EnrichedProduct] = {}
         self._is_indexed: bool = False
 
-    def _get_embed_model(self) -> TextEmbedding:
-        if self._embed_model is None:
-            self._embed_model = TextEmbedding(model_name=self.embedding_model_name)
+    def _get_embed_model(self) -> Optional[Any]:
+        if not HAS_FASTEMBED:
+            return None
+        if self._embed_model is None and TextEmbedding is not None:
+            try:
+                self._embed_model = TextEmbedding(model_name=self.embedding_model_name)
+            except Exception as e:
+                logger.warning(f"Could not load FastEmbed model: {e}")
+                self._embed_model = None
         return self._embed_model
 
-    def build_product_document(self, p: EnrichedProduct) -> Document:
-        """Create a semantically rich LlamaIndex Document for an industrial product."""
+    def build_product_document(self, p: EnrichedProduct) -> Any:
+        """Create a semantically rich Document for an industrial product."""
         row_id_val = p.raw.row_id or 0
         attr_text = ", ".join(f"{a.label}: {a.value} {a.uom or ''}".strip() for a in p.attributes)
         features_text = "; ".join(p.item_features or [])
@@ -76,11 +103,13 @@ class CatalogRAGEngine:
             "attribute_count": len(p.attributes)
         }
 
-        return Document(
-            text=content,
-            metadata=metadata,
-            doc_id=f"doc_{row_id_val}"
-        )
+        if HAS_LLAMA_INDEX and Document is not None:
+            return Document(
+                text=content,
+                metadata=metadata,
+                doc_id=f"doc_{row_id_val}"
+            )
+        return type("SimpleDoc", (), {"text": content, "metadata": metadata, "doc_id": f"doc_{row_id_val}"})()
 
     def index_catalog(self, products: List[EnrichedProduct]) -> None:
         """Ingest and index the entire catalog into LlamaIndex and Dense+BM25 stores."""
@@ -90,63 +119,63 @@ class CatalogRAGEngine:
 
         # 1. Build LlamaIndex Documents & TextNodes
         self._documents = [self.build_product_document(p) for p in products]
-        self._nodes = [
-            TextNode(
-                text=doc.text,
-                metadata=doc.metadata,
-                id_=doc.doc_id
-            )
-            for doc in self._documents
-        ]
+        if HAS_LLAMA_INDEX and TextNode is not None:
+            self._nodes = [
+                TextNode(
+                    text=doc.text,
+                    metadata=doc.metadata,
+                    id_=doc.doc_id
+                )
+                for doc in self._documents
+            ]
 
-        # 2. Build BM25 Sparse Lexical Index
+        # 2. Build BM25 Sparse Lexical Index if available
         self._bm25_corpus = [
             doc.text.lower().replace("\n", " ").split()
             for doc in self._documents
         ]
-        self._bm25 = BM25Okapi(self._bm25_corpus)
+        if HAS_BM25 and BM25Okapi is not None:
+            self._bm25 = BM25Okapi(self._bm25_corpus)
 
-        # 3. Compute Dense Embeddings with FastEmbed (Cached on disk)
-        from pathlib import Path
-        cache_file = Path("data/output/catalog_embeddings.npy")
-        
-        if cache_file.exists() and cache_file.stat().st_size > 0:
-            try:
-                self._dense_embeddings = np.load(cache_file)
-                if len(self._dense_embeddings) == len(products):
-                    print(f"Loaded {len(products)} cached LlamaIndex neural embeddings from {cache_file}")
-                else:
+        # 3. Compute Dense Embeddings with FastEmbed if available
+        embed_model = self._get_embed_model()
+        if embed_model is not None:
+            from pathlib import Path
+            cache_file = Path("data/output/catalog_embeddings.npy")
+            
+            if cache_file.exists() and cache_file.stat().st_size > 0:
+                try:
+                    self._dense_embeddings = np.load(cache_file)
+                    if len(self._dense_embeddings) == len(products):
+                        print(f"Loaded {len(products)} cached neural embeddings from {cache_file}")
+                    else:
+                        self._dense_embeddings = None
+                except Exception as e:
+                    print(f"Failed to load embedding cache: {e}")
                     self._dense_embeddings = None
-            except Exception as e:
-                print(f"Failed to load embedding cache: {e}")
-                self._dense_embeddings = None
 
-        if self._dense_embeddings is None:
-            embed_model = self._get_embed_model()
-            dense_texts = [
-                f"{p.brand_name} {p.mfg_part_number} {p.short_desc} {p.classpath} " +
-                " ".join(f"{a.label} {a.value} {a.uom or ''}" for a in p.attributes[:6])
-                for p in products
-            ]
-            embeddings_list = list(embed_model.embed(dense_texts, batch_size=256))
-            self._dense_embeddings = np.array(embeddings_list, dtype=np.float32)
-            
-            # Normalize vectors for cosine similarity
-            norms = np.linalg.norm(self._dense_embeddings, axis=1, keepdims=True)
-            norms[norms == 0] = 1e-10
-            self._dense_embeddings = self._dense_embeddings / norms
-            
-            # Persist cache
-            try:
-                cache_file.parent.mkdir(parents=True, exist_ok=True)
-                np.save(cache_file, self._dense_embeddings)
-                print(f"Persisted {len(products)} LlamaIndex neural embeddings to {cache_file}")
-            except Exception as e:
-                print(f"Warning: Could not save embeddings cache: {e}")
+            if self._dense_embeddings is None:
+                dense_texts = [
+                    f"{p.brand_name} {p.mfg_part_number} {p.short_desc} {p.classpath} " +
+                    " ".join(f"{a.label} {a.value} {a.uom or ''}" for a in p.attributes[:6])
+                    for p in products
+                ]
+                embeddings_list = list(embed_model.embed(dense_texts, batch_size=256))
+                self._dense_embeddings = np.array(embeddings_list, dtype=np.float32)
+                
+                norms = np.linalg.norm(self._dense_embeddings, axis=1, keepdims=True)
+                norms[norms == 0] = 1e-10
+                self._dense_embeddings = self._dense_embeddings / norms
+                
+                try:
+                    cache_file.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(cache_file, self._dense_embeddings)
+                except Exception as e:
+                    print(f"Warning: Could not save embeddings cache: {e}")
 
         self._is_indexed = True
         elapsed = time.time() - start_time
-        print(f"LlamaIndex & Neural RAG Engine indexed {len(products)} products in {elapsed:.2f}s")
+        print(f"RAG Engine indexed {len(products)} products in {elapsed:.2f}s (Dense: {self._dense_embeddings is not None}, BM25: {self._bm25 is not None})")
 
     def search(
         self,
@@ -172,24 +201,42 @@ class CatalogRAGEngine:
                 "synthesis": "Empty search query provided."
             }
 
+        tokenized_q = clean_query.lower().split()
+        num_products = len(self._products)
+
         # 1. Compute Dense Vector Cosine Similarity
+        dense_scores = np.zeros(num_products, dtype=np.float32)
         embed_model = self._get_embed_model()
-        query_vec = list(embed_model.embed([clean_query]))[0]
-        query_vec = np.array(query_vec, dtype=np.float32)
-        q_norm = np.linalg.norm(query_vec)
-        if q_norm > 0:
-            query_vec = query_vec / q_norm
-        dense_scores = np.dot(self._dense_embeddings, query_vec)
+        if self._dense_embeddings is not None and embed_model is not None:
+            try:
+                query_vec = list(embed_model.embed([clean_query]))[0]
+                query_vec = np.array(query_vec, dtype=np.float32)
+                q_norm = np.linalg.norm(query_vec)
+                if q_norm > 0:
+                    query_vec = query_vec / q_norm
+                dense_scores = np.dot(self._dense_embeddings, query_vec)
+            except Exception as e:
+                logger.warning(f"Dense vector scoring failed: {e}")
 
         # 2. Compute Sparse BM25 Scores
-        tokenized_q = clean_query.lower().split()
-        bm25_raw_scores = np.array(self._bm25.get_scores(tokenized_q), dtype=np.float32)
-        bm25_max = np.max(bm25_raw_scores) if np.max(bm25_raw_scores) > 0 else 1.0
-        bm25_normalized = bm25_raw_scores / bm25_max
+        bm25_normalized = np.zeros(num_products, dtype=np.float32)
+        if self._bm25 is not None:
+            bm25_raw_scores = np.array(self._bm25.get_scores(tokenized_q), dtype=np.float32)
+            bm25_max = np.max(bm25_raw_scores) if np.max(bm25_raw_scores) > 0 else 1.0
+            bm25_normalized = bm25_raw_scores / bm25_max
+        else:
+            # Fallback lexical scoring
+            for i, doc in enumerate(self._documents):
+                txt = doc.text.lower()
+                matches = sum(1 for t in tokenized_q if t in txt)
+                bm25_normalized[i] = matches / max(1, len(tokenized_q))
 
         # 3. Hybrid Reciprocal Fusion
-        sparse_weight = 1.0 - dense_weight
-        hybrid_scores = (dense_weight * dense_scores) + (sparse_weight * bm25_normalized)
+        if self._dense_embeddings is not None:
+            sparse_weight = 1.0 - dense_weight
+            hybrid_scores = (dense_weight * dense_scores) + (sparse_weight * bm25_normalized)
+        else:
+            hybrid_scores = bm25_normalized
 
         # 4. Rank and Filter Candidates
         ranked_indices = np.argsort(-hybrid_scores)
